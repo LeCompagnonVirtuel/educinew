@@ -22,6 +22,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
     instrumentationHook: true,
+    optimizePackageImports: ['lucide-react', 'recharts'],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -32,6 +33,18 @@ const nextConfig = {
         tls: false,
       };
     }
+
+    config.cache = {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [__filename],
+      },
+    };
+
+    if (config.parallelism !== undefined) {
+      config.parallelism = 1;
+    }
+
     return config;
   },
 };
