@@ -1,15 +1,14 @@
 import { withSupabase } from '@supabase/server';
 
-export const GET = withSupabase({ auth: 'user' }, async (req, { params }) => {
+export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const supabase = ctx.supabase as any;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  const { data: profile } = await supabase.from('users').select('school_id').eq('id', ctx.user.id).single();
   const schoolId = profile?.school_id;
   if (!schoolId) return Response.json({ error: 'Établissement requis' }, { status: 403 });
 
-  const { id } = await params;
+  const params = await req.nextUrl.pathname.split('/').filter(Boolean);
+  const id = params[params.length - 1];
 
   const { data, error } = await supabase
     .from('attendance_sessions')
@@ -22,12 +21,10 @@ export const GET = withSupabase({ auth: 'user' }, async (req, { params }) => {
   return Response.json(data);
 });
 
-export const DELETE = withSupabase({ auth: 'user' }, async (req, { params }) => {
+export const DELETE = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const supabase = ctx.supabase as any;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', ctx.user.id).single();
   const role = profile?.role;
   const schoolId = profile?.school_id;
 
@@ -36,7 +33,8 @@ export const DELETE = withSupabase({ auth: 'user' }, async (req, { params }) => 
   }
   if (!schoolId) return Response.json({ error: 'Établissement requis' }, { status: 403 });
 
-  const { id } = await params;
+  const params = await req.nextUrl.pathname.split('/').filter(Boolean);
+  const id = params[params.length - 2];
 
   const { error } = await supabase
     .from('attendance_sessions')

@@ -1,25 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-export function useNFCAttendance(sessionId: string | null) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export function useNFCAttendance() {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  useEffect(() => {
-    if (!sessionId) { setLoading(false); return; }
-    const fetchData = async () => {
-      setLoading(true); setError(null);
-      try {
-        const response = await fetch(`/api/attendance/nfc/${sessionId}`);
-        if (!response.ok) throw new Error('Erreur');
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur inconnue');
-      } finally { setLoading(false); }
-    };
-    fetchData();
-  }, [sessionId]);
+  const checkIn = async (nfcTag: string): Promise<any> => {
+    setLoading(true); setError(null);
+    try {
+      const response = await fetch('/api/attendance/nfc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nfc_tag: nfcTag }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erreur pointage NFC');
+      setData(result);
+      return result;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(msg);
+      throw err;
+    } finally { setLoading(false); }
+  };
 
-  return { data, loading, error };
+  return { checkIn, data, loading, error };
 }

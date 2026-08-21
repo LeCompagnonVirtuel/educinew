@@ -1,25 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-export function useJustification(attendanceId: string | null) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export function useJustification() {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!attendanceId) { setLoading(false); return; }
-    const fetchData = async () => {
-      setLoading(true); setError(null);
-      try {
-        const response = await fetch(`/api/attendance/justification/${attendanceId}`);
-        if (!response.ok) throw new Error('Erreur');
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur inconnue');
-      } finally { setLoading(false); }
-    };
-    fetchData();
-  }, [attendanceId]);
+  const createJustification = async (attendanceId: string, reason: string, documents?: File[]): Promise<any> => {
+    setLoading(true); setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('attendance_id', attendanceId);
+      formData.append('reason', reason);
+      if (documents) {
+        documents.forEach((file, i) => formData.append(`document_${i}`, file));
+      }
 
-  return { data, loading, error };
+      const response = await fetch('/api/attendance/correction', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erreur création justification');
+      return data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(msg);
+      throw err;
+    } finally { setLoading(false); }
+  };
+
+  return { createJustification, loading, error };
 }

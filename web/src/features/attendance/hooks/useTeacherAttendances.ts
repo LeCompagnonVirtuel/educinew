@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Attendance } from '../types';
 
 export function useTeacherAttendances(schoolId: string, filters?: Record<string, string>) {
@@ -6,17 +6,18 @@ export function useTeacherAttendances(schoolId: string, filters?: Record<string,
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
+
   useEffect(() => {
     if (!schoolId) { setLoading(false); return; }
     const fetchData = async () => {
       setLoading(true); setError(null);
       try {
         const params = new URLSearchParams({ schoolId });
-        if (filters) {
-          Object.entries(filters).forEach(([key, value]) => {
-            params.append(key, value);
-          });
-        }
+        const parsed = JSON.parse(filtersKey);
+        Object.entries(parsed).forEach(([key, value]) => {
+          params.append(key, value as string);
+        });
         const response = await fetch(`/api/attendance/teacher?${params.toString()}`);
         if (!response.ok) throw new Error('Erreur');
         const result = await response.json();
@@ -26,7 +27,7 @@ export function useTeacherAttendances(schoolId: string, filters?: Record<string,
       } finally { setLoading(false); }
     };
     fetchData();
-  }, [schoolId, filters]);
+  }, [schoolId, filtersKey]);
 
   return { data, loading, error };
 }

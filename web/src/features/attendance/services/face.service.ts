@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import type {
   AttendanceFaceRecognition,
   AttendanceRepositoryExtended,
@@ -66,7 +67,7 @@ export class FaceRecognitionService {
     }
 
     const face: AttendanceFaceRecognition = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       studentId,
       schoolId,
       faceData,

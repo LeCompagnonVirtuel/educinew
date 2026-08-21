@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import type {
   AttendanceNFC,
   AttendanceRepositoryExtended,
@@ -60,7 +61,7 @@ export class NFCService {
     }
 
     const nfc: AttendanceNFC = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       tagId,
       tagType: tagType || 'MIFARE_CLASSIC',
       studentId,
