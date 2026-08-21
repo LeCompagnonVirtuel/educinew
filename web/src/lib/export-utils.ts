@@ -1,7 +1,3 @@
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 export type ExportFormat = 'csv' | 'excel' | 'pdf';
 
 export interface ExportColumn {
@@ -36,7 +32,7 @@ export function hexToRgb(hex: string): [number, number, number] {
 /**
  * Export data to CSV, Excel, or PDF file and trigger download
  */
-export function exportToFile(
+export async function exportToFile(
   data: Record<string, any>[],
   columns: ExportColumn[],
   filename: string,
@@ -45,9 +41,9 @@ export function exportToFile(
   brandingOptions?: BrandingOptions
 ) {
   if (format === 'excel') {
-    exportToExcel(data, columns, filename);
+    await exportToExcel(data, columns, filename);
   } else if (format === 'pdf') {
-    exportToPDF(data, columns, filename, pdfOptions, brandingOptions);
+    await exportToPDF(data, columns, filename, pdfOptions, brandingOptions);
   } else {
     exportToCSV(data, columns, filename);
   }
@@ -76,11 +72,12 @@ function exportToCSV(
   triggerDownload(blob, `${filename}.csv`);
 }
 
-function exportToExcel(
+async function exportToExcel(
   data: Record<string, any>[],
   columns: ExportColumn[],
   filename: string
 ) {
+  const XLSX = await import('xlsx');
   const wsData = [
     columns.map(c => c.header),
     ...data.map(row =>
@@ -106,13 +103,17 @@ function exportToExcel(
   triggerDownload(blob, `${filename}.xlsx`);
 }
 
-function exportToPDF(
+async function exportToPDF(
   data: Record<string, any>[],
   columns: ExportColumn[],
   filename: string,
   options?: PDFOptions,
   branding?: BrandingOptions
 ) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
   const orientation = options?.orientation || (columns.length > 6 ? 'landscape' : 'portrait');
   const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
 
@@ -272,6 +273,7 @@ function parseCSVLine(line: string, delimiter: string): string[] {
 }
 
 async function parseXLSX(file: File): Promise<Record<string, string>[]> {
+  const XLSX = await import('xlsx');
   const buffer = await file.arrayBuffer();
   const wb = XLSX.read(buffer, { type: 'array' });
 
