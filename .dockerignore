@@ -1,0 +1,11 @@
+node_modules
+web/node_modules
+.next
+web/.next
+.git
+.github
+*.md
+.env*
+!.env.example
+vercel.json
+netlify.toml
