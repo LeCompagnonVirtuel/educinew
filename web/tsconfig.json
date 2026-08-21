@@ -26,6 +26,21 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@educi/config": [
+        "../packages/config/src/index.ts"
+      ],
+      "@educi/errors": [
+        "../packages/errors/src/index.ts"
+      ],
+      "@educi/logger": [
+        "../packages/logger/src/index.ts"
+      ],
+      "@educi/types": [
+        "../packages/types/src/index.ts"
+      ],
+      "@educi/utils": [
+        "../packages/utils/src/index.ts"
       ]
     }
   },
