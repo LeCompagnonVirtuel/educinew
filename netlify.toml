@@ -1,9 +1,9 @@
 [build]
-  command = "NODE_OPTIONS='--max-old-space-size=2500' next build"
+  command = "npm run build"
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_OPTIONS = "--max-old-space-size=2500"
   NEXT_TELEMETRY_DISABLED = "1"
 
 [[headers]]
