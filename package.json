@@ -9,6 +9,7 @@
     "mobile"
   ],
   "scripts": {
+    "build": "npm run build:web",
     "dev:web": "cd web && npm run dev",
     "dev:mobile": "cd mobile && npm start",
     "dev": "npm run dev:web",
