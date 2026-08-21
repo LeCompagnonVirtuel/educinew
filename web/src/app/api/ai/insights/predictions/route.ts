@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { AiInsightService } from '@/features/ai/services/ai-insight.service';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
+    // --- Auth check ---
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const authSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,6 +23,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const schoolId = searchParams.get('schoolId');
     if (!schoolId) return NextResponse.json({ error: 'schoolId required' }, { status: 400 });
+    // --- School access check ---
+    const { data: userSchool } = await authSupabase.from('user_schools').select('school_id').eq('user_id', user.id).eq('school_id', schoolId).single();
+    if (!userSchool && user.user_metadata?.role !== 'SUPER_ADMIN' && user.app_metadata?.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
+    }
 
     const service = new AiInsightService(supabase);
     const data = await service.getPredictions(schoolId);
