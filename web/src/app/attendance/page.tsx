@@ -64,6 +64,7 @@ export default function AttendancePage() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyFilter, setHistoryFilter] = useState<'day' | 'class' | 'student'>('day');
   const [historyData, setHistoryData] = useState<any[]>([]);
+  const [teacherAttendance, setTeacherAttendance] = useState<any[]>([]);
   const lastSavedRef = useRef<string>('');
 
   // QR Code check-in state
@@ -180,6 +181,23 @@ export default function AttendancePage() {
     }
   }, [historyPage, selectedDate, selectedClassId]);
 
+  const loadTeacherAttendance = useCallback(async () => {
+    if (!user?.schoolId) return;
+    try {
+      const { getSupabase } = await import('@/lib/api/shared');
+      const supabase = getSupabase();
+      const { data } = await supabase
+        .from('teacher_attendance')
+        .select('*, teacher:teachers(user:users!teachers_user_id_fkey(name))')
+        .eq('school_id', user.schoolId)
+        .eq('date', selectedDate)
+        .order('check_in_time', { ascending: true });
+      setTeacherAttendance(data || []);
+    } catch (err) {
+      void err;
+    }
+  }, [user?.schoolId, selectedDate]);
+
   useEffect(() => {
     loadClasses();
   }, [loadClasses]);
@@ -195,6 +213,12 @@ export default function AttendancePage() {
       loadHistory();
     }
   }, [viewMode, loadHistory]);
+
+  useEffect(() => {
+    if (viewMode === 'alerts') {
+      loadTeacherAttendance();
+    }
+  }, [viewMode, loadTeacherAttendance]);
 
   useEffect(() => {
     if (!studentParam) return;
@@ -374,17 +398,35 @@ export default function AttendancePage() {
   };
 
   // SMS handlers
-  const handleOpenSMSModal = () => {
+  const handleOpenSMSModal = async () => {
     const absentStudents = students.filter(s => s.status === 'ABSENT');
     const lateStudents = students.filter(s => s.status === 'LATE');
     const allStudents = students;
 
-    if (smsRecipients === 'absent') {
-      setSmsPreview(absentStudents.map(s => ({ ...s, parentPhone: '+225 07 XX XX XX XX' })));
-    } else if (smsRecipients === 'late') {
-      setSmsPreview(lateStudents.map(s => ({ ...s, parentPhone: '+225 07 XX XX XX XX' })));
-    } else {
-      setSmsPreview(allStudents.map(s => ({ ...s, parentPhone: '+225 07 XX XX XX XX' })));
+    const targetStudents = smsRecipients === 'absent' ? absentStudents :
+                          smsRecipients === 'late' ? lateStudents : allStudents;
+
+    try {
+      const { getSupabase } = await import('@/lib/api/shared');
+      const supabase = getSupabase();
+      const studentIds = targetStudents.map(s => s.studentId);
+      const { data: guardians } = await supabase
+        .from('student_guardians')
+        .select('student_id, phone, name')
+        .in('student_id', studentIds)
+        .eq('is_primary', true);
+
+      const phoneMap: Record<string, string> = {};
+      guardians?.forEach((g: any) => {
+        if (g.phone) phoneMap[g.student_id] = g.phone;
+      });
+
+      setSmsPreview(targetStudents.map(s => ({
+        ...s,
+        parentPhone: phoneMap[s.studentId] || '—',
+      })));
+    } catch {
+      setSmsPreview(targetStudents.map(s => ({ ...s, parentPhone: '—' })));
     }
     setShowSMSModal(true);
   };
@@ -834,31 +876,40 @@ export default function AttendancePage() {
               <h3 className="font-semibold text-slate-800">Comparaison par classe</h3>
             </div>
             <div className="divide-y">
-              {classes.slice(0, 6).map((cls, i) => (
-                <div key={cls.id} className="p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                    {cls.name.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-800">{cls.name}</p>
-                    <p className="text-xs text-slate-400">{cls.studentCount} élèves</p>
-                  </div>
-                  <div className="w-48">
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${
-                          95 - i * 3 < 80 ? 'bg-red-500' : 
-                          95 - i * 3 < 90 ? 'bg-amber-500' : 'bg-emerald-500'
-                        }`}
-                        style={{ width: `${95 - i * 3}%` }}
-                      />
+              {classes.slice(0, 6).map((cls) => {
+                const classRecords = historyData.filter((r: any) => r.classId === cls.id || r.class_id === cls.id);
+                const classTotal = classRecords.length || 1;
+                const classPresent = classRecords.filter((r: any) => r.status === 'PRESENT' || r.status === 'LATE').length;
+                const classRate = Math.round((classPresent / classTotal) * 100);
+                return (
+                  <div key={cls.id} className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+                      {cls.name.charAt(0)}
                     </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-800">{cls.name}</p>
+                      <p className="text-xs text-slate-400">{cls.studentCount} élèves</p>
+                    </div>
+                    <div className="w-48">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${
+                            classRate < 80 ? 'bg-red-500' : 
+                            classRate < 90 ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${classRate}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-600 w-12 text-right">
+                      {classRate}%
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-600 w-12 text-right">
-                    {95 - i * 3}%
-                  </span>
-                </div>
-              ))}
+                );
+              })}
+              {classes.length === 0 && (
+                <div className="p-4 text-center text-slate-400 text-sm">Aucune classe disponible</div>
+              )}
             </div>
           </div>
         </div>
@@ -875,7 +926,7 @@ export default function AttendancePage() {
                   <UserX size={20} className="text-red-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-red-700">{alerts.filter(a => a.type === 'danger').length + 2}</p>
+                  <p className="text-2xl font-bold text-red-700">{alerts.filter(a => a.type === 'danger').length}</p>
                   <p className="text-sm text-red-600">Absences critiques</p>
                 </div>
               </div>
@@ -886,7 +937,7 @@ export default function AttendancePage() {
                   <Clock size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-amber-700">{alerts.filter(a => a.type === 'warning').length + 1}</p>
+                  <p className="text-2xl font-bold text-amber-700">{alerts.filter(a => a.type === 'warning').length}</p>
                   <p className="text-sm text-amber-600">Retards répétés</p>
                 </div>
               </div>
@@ -897,7 +948,7 @@ export default function AttendancePage() {
                   <Bell size={20} className="text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-blue-700">{alerts.filter(a => a.type === 'info').length + 1}</p>
+                  <p className="text-2xl font-bold text-blue-700">{alerts.length}</p>
                   <p className="text-sm text-blue-600">Nouvelles alertes</p>
                 </div>
               </div>
@@ -954,27 +1005,28 @@ export default function AttendancePage() {
               </span>
             </div>
             <div className="divide-y">
-              {[
-                { name: 'M. Kouassi', subject: 'Mathématiques', status: 'present', time: '07:45' },
-                { name: 'Mme. Adebayo', subject: 'Français', status: 'late', time: '08:12' },
-                { name: 'M. Mensah', subject: 'Sciences', status: 'present', time: '07:50' },
-                { name: 'Mme. Touré', subject: 'Anglais', status: 'present', time: '07:42' },
-              ].map((teacher, i) => (
-                <div key={i} className="p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
-                    {teacher.name.split(' ')[1]?.[0] || 'T'}
+              {teacherAttendance.length === 0 ? (
+                <div className="p-4 text-center text-slate-400 text-sm">Aucun pointage enseignant aujourd'hui</div>
+              ) : (
+                teacherAttendance.map((ta: any) => (
+                  <div key={ta.id} className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
+                      {ta.teacher?.user?.name?.split(' ')?.[1]?.[0] || 'T'}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-800">{ta.teacher?.user?.name || 'Enseignant'}</p>
+                      <p className="text-xs text-slate-400">{ta.check_in_time ? `Arrivé à ${new Date(ta.check_in_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : 'Non pointé'}</p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      ta.status === 'PRESENT' ? 'bg-emerald-100 text-emerald-700' :
+                      ta.status === 'LATE' ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {ta.status === 'PRESENT' ? 'Présent' : ta.status === 'LATE' ? 'Retard' : 'Absent'}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-800">{teacher.name}</p>
-                    <p className="text-xs text-slate-400">{teacher.subject}</p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    teacher.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {teacher.status === 'present' ? 'Présent' : 'Retard'} - {teacher.time}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1174,12 +1226,27 @@ export default function AttendancePage() {
                 ].map(opt => (
                   <button
                     key={opt.id}
-                    onClick={() => {
+                    onClick={async () => {
                       setSmsRecipients(opt.id as any);
-                      setSmsPreview(students.filter(s => 
+                      const targetStudents = students.filter(s => 
                         opt.id === 'absent' ? s.status === 'ABSENT' :
                         opt.id === 'late' ? s.status === 'LATE' : true
-                      ).map(s => ({ ...s, parentPhone: '+225 07 XX XX XX XX' })));
+                      );
+                      try {
+                        const { getSupabase } = await import('@/lib/api/shared');
+                        const supabase = getSupabase();
+                        const studentIds = targetStudents.map(s => s.studentId);
+                        const { data: guardians } = await supabase
+                          .from('student_guardians')
+                          .select('student_id, phone')
+                          .in('student_id', studentIds)
+                          .eq('is_primary', true);
+                        const phoneMap: Record<string, string> = {};
+                        guardians?.forEach((g: any) => { if (g.phone) phoneMap[g.student_id] = g.phone; });
+                        setSmsPreview(targetStudents.map(s => ({ ...s, parentPhone: phoneMap[s.studentId] || '—' })));
+                      } catch {
+                        setSmsPreview(targetStudents.map(s => ({ ...s, parentPhone: '—' })));
+                      }
                     }}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       smsRecipients === opt.id ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
