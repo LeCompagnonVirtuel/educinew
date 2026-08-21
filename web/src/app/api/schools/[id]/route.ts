@@ -26,9 +26,15 @@ export const PATCH = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(profile?.role)) {
+  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  if (!profile || !['SUPER_ADMIN', 'ADMIN'].includes(profile.role)) {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });
+  }
+
+  const isSuperAdmin = profile.role === 'SUPER_ADMIN';
+
+  if (!isSuperAdmin && profile.school_id !== id) {
+    return Response.json({ error: 'Non autorisé — vous ne pouvez modifier que votre propre établissement' }, { status: 403 });
   }
 
   const body = await req.json();

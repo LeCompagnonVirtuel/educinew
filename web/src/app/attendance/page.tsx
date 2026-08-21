@@ -452,14 +452,49 @@ export default function AttendancePage() {
     showToast(autoCheckIn ? 'Pointage automatique désactivé' : 'Pointage automatique activé', 'info');
   };
 
-  const handleGenerateClassQR = () => {
-    const qrData = JSON.stringify({
-      classId: selectedClassId,
-      schoolId: user?.schoolId,
-      date: selectedDate
-    });
-    setQrCode(btoa(qrData));
-    showToast('QR Code de classe généré', 'success');
+  const handleGenerateClassQR = async () => {
+    try {
+      const { getSupabase } = await import('@/lib/api/shared');
+      const supabase = getSupabase();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data: profile } = await supabase.from('users').select('school_id').eq('id', authUser.id).single();
+      if (!profile) return;
+
+      const sessionToken = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+      const { data: session, error: sessionError } = await supabase
+        .from('attendance_sessions')
+        .insert({
+          school_id: profile.school_id,
+          teacher_id: null,
+          class_id: selectedClassId,
+          session_type: 'CLASS',
+          status: 'ACTIVE',
+          qr_code: sessionToken,
+          qr_expires_at: expiresAt,
+          started_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      const qrData = JSON.stringify({
+        sessionId: session.id,
+        token: sessionToken,
+        classId: selectedClassId,
+        schoolId: profile.schoolId,
+        date: selectedDate,
+        expiresAt,
+      });
+      setQrCode(btoa(qrData));
+      showToast('QR Code de classe généré (valable 5 min)', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Erreur lors de la génération du QR', 'error');
+    }
   };
 
   return (

@@ -9,11 +9,20 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: student, error } = await supabase
+  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  if (!profile) return Response.json({ error: 'Profil introuvable' }, { status: 404 });
+
+  const isSuperAdmin = profile.role === 'SUPER_ADMIN';
+  const query = supabase
     .from('students')
     .select('*, user:users(id, name, email, photo_url), class:classes(id, name, level), parent:users!parent_id(id, name)')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
+
+  if (!isSuperAdmin) {
+    query.eq('school_id', profile.school_id);
+  }
+
+  const { data: student, error } = await query.single();
 
   if (error || !student) return Response.json({ error: 'Élève introuvable' }, { status: 404 });
 
@@ -28,9 +37,18 @@ export const PATCH = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
-  if (!['SUPER_ADMIN', 'ADMIN', 'SECRETAIRE'].includes(profile?.role)) {
+  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  if (!profile || !['SUPER_ADMIN', 'ADMIN', 'SECRETAIRE'].includes(profile.role)) {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });
+  }
+
+  const isSuperAdmin = profile.role === 'SUPER_ADMIN';
+
+  if (!isSuperAdmin) {
+    const { data: existing } = await supabase.from('students').select('school_id').eq('id', id).single();
+    if (!existing || existing.school_id !== profile.school_id) {
+      return Response.json({ error: 'Non autorisé' }, { status: 403 });
+    }
   }
 
   const body = await req.json();
@@ -81,9 +99,16 @@ export const DELETE = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(profile?.role)) {
+  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  if (!profile || !['SUPER_ADMIN', 'ADMIN'].includes(profile.role)) {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });
+  }
+
+  if (profile.role !== 'SUPER_ADMIN') {
+    const { data: existing } = await supabase.from('students').select('school_id').eq('id', id).single();
+    if (!existing || existing.school_id !== profile.school_id) {
+      return Response.json({ error: 'Non autorisé' }, { status: 403 });
+    }
   }
 
   const { error } = await supabase.from('students').delete().eq('id', id);
