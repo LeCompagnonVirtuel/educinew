@@ -1,0 +1,50 @@
+import z from "zod";
+
+export const CreateAIInteropSchema = z.object({
+  school_id: z.string().uuid({ message: "Identifiant de l'école invalide" }),
+  name: z.string().min(1, { message: "Le nom est requis" }).max(255, { message: "Le nom ne doit pas dépasser 255 caractères" }),
+  description: z.string().max(2000, { message: "La description ne doit pas dépasser 2000 caractères" }).optional(),
+  model_type: z.enum(["nlp", "cv", "recommendation", "prediction", "anomaly_detection", "generative", "classification", "clustering", "custom"], { message: "Type de modèle invalide" }),
+  provider: z.enum(["deepseek", "gemini", "openai", "custom", "internal"], { message: "Fournisseur invalide" }),
+  status: z.enum(["active", "inactive", "training", "deploying", "error", "archived"], { message: "Statut invalide" }).default("inactive"),
+  endpoint: z.string().url({ message: "URL de l'endpoint invalide" }).optional(),
+  api_key_ref: z.string().max(255, { message: "La référence de clé API ne doit pas dépasser 255 caractères" }).optional(),
+  use_case: z.enum(["student_support", "grading", "attendance", "analytics", "content_generation", "assessment", "plagiarism_detection", "resource_optimization", "other"], { message: "Cas d'utilisation invalide" }),
+  data_sources: z.array(z.string().min(1, { message: "La source de données est requise" })).min(1, { message: "Au moins une source de données est requise" }),
+  input_schema: z.record(z.unknown()).optional(),
+  output_schema: z.record(z.unknown()).optional(),
+  config: z.object({
+    temperature: z.number().min(0, { message: "La température doit être positive" }).max(2, { message: "La température ne peut pas dépasser 2" }).default(0.7),
+    max_tokens: z.number().int({ message: "Le nombre de tokens doit être un entier" }).min(1, { message: "Le nombre de tokens doit être supérieur à 0" }).default(2048),
+    top_p: z.number().min(0, { message: "Le top_p doit être positif" }).max(1, { message: "Le top_p ne peut pas dépasser 1" }).default(1),
+    frequency_penalty: z.number().min(0, { message: "La pénalité de fréquence doit être positive" }).max(2, { message: "La pénalité de fréquence ne peut pas dépasser 2" }).default(0),
+    presence_penalty: z.number().min(0, { message: "La pénalité de présence doit être positive" }).max(2, { message: "La pénalité de présence ne peut pas dépasser 2" }).default(0),
+  }).optional(),
+  rate_limit: z.number().int({ message: "La limite de requêtes doit être un entier" }).min(1, { message: "La limite de requêtes doit être supérieure à 0" }).default(100),
+  timeout_ms: z.number().int({ message: "Le timeout doit être un entier" }).min(1000, { message: "Le timeout doit être d'au moins 1000 ms" }).default(30000),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const UpdateAIInteropSchema = z.object({
+  name: z.string().min(1, { message: "Le nom est requis" }).max(255, { message: "Le nom ne doit pas dépasser 255 caractères" }).optional(),
+  description: z.string().max(2000, { message: "La description ne doit pas dépasser 2000 caractères" }).optional().nullable(),
+  model_type: z.enum(["nlp", "cv", "recommendation", "prediction", "anomaly_detection", "generative", "classification", "clustering", "custom"], { message: "Type de modèle invalide" }).optional(),
+  provider: z.enum(["deepseek", "gemini", "openai", "custom", "internal"], { message: "Fournisseur invalide" }).optional(),
+  status: z.enum(["active", "inactive", "training", "deploying", "error", "archived"], { message: "Statut invalide" }).optional(),
+  endpoint: z.string().url({ message: "URL de l'endpoint invalide" }).optional().nullable(),
+  api_key_ref: z.string().max(255, { message: "La référence de clé API ne doit pas dépasser 255 caractères" }).optional().nullable(),
+  use_case: z.enum(["student_support", "grading", "attendance", "analytics", "content_generation", "assessment", "plagiarism_detection", "resource_optimization", "other"], { message: "Cas d'utilisation invalide" }).optional(),
+  data_sources: z.array(z.string().min(1, { message: "La source de données est requise" })).min(1, { message: "Au moins une source de données est requise" }).optional(),
+  input_schema: z.record(z.unknown()).optional().nullable(),
+  output_schema: z.record(z.unknown()).optional().nullable(),
+  config: z.object({
+    temperature: z.number().min(0, { message: "La température doit être positive" }).max(2, { message: "La température ne peut pas dépasser 2" }),
+    max_tokens: z.number().int({ message: "Le nombre de tokens doit être un entier" }).min(1, { message: "Le nombre de tokens doit être supérieur à 0" }),
+    top_p: z.number().min(0, { message: "Le top_p doit être positif" }).max(1, { message: "Le top_p ne peut pas dépasser 1" }),
+    frequency_penalty: z.number().min(0, { message: "La pénalité de fréquence doit être positive" }).max(2, { message: "La pénalité de fréquence ne peut pas dépasser 2" }),
+    presence_penalty: z.number().min(0, { message: "La pénalité de présence doit être positive" }).max(2, { message: "La pénalité de présence ne peut pas dépasser 2" }),
+  }).optional().nullable(),
+  rate_limit: z.number().int({ message: "La limite de requêtes doit être un entier" }).min(1, { message: "La limite de requêtes doit être supérieure à 0" }).optional(),
+  timeout_ms: z.number().int({ message: "Le timeout doit être un entier" }).min(1000, { message: "Le timeout doit être d'au moins 1000 ms" }).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});

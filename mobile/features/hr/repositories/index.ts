@@ -1,0 +1,1 @@
+export { HrMobileRepository } from './hr.repository';

@@ -1,0 +1,16 @@
+{
+  "name": "EduCI - L'école connectée",
+  "short_name": "EduCI",
+  "description": "Plateforme de gestion scolaire numérique pour l'Afrique",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "fr",
+  "dir": "ltr"
+}

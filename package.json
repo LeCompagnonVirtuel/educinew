@@ -1,0 +1,22 @@
+{
+  "name": "educi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EduCI — L'école connectée. Plateforme de gestion scolaire numérique pour l'Afrique.",
+  "workspaces": [
+    "packages/*",
+    "web",
+    "mobile"
+  ],
+  "scripts": {
+    "dev:web": "cd web && npm run dev",
+    "dev:mobile": "cd mobile && npm start",
+    "dev": "npm run dev:web",
+    "build:web": "cd web && npm run build",
+    "install:all": "npm install",
+    "lint": "cd web && npm run lint",
+    "typecheck": "tsc --build packages/types packages/errors packages/logger packages/utils packages/config"
+  },
+  "keywords": ["school", "education", "saas", "africa", "cote-d-ivoire"],
+  "license": "UNLICENSED"
+}

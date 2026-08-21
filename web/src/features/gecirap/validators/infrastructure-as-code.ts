@@ -1,0 +1,32 @@
+import {
+  createGecirapInfrastructureTemplateSchema,
+  updateGecirapInfrastructureTemplateSchema,
+  createGecirapInfrastructureStackSchema,
+  updateGecirapInfrastructureStackSchema,
+  createGecirapProvisioningJobSchema,
+  updateGecirapProvisioningJobSchema,
+  createGecirapResourceChangeSchema,
+  updateGecirapResourceChangeSchema,
+  createGecirapDriftDetectionSchema,
+  updateGecirapDriftDetectionSchema,
+  createGecirapInfrastructurePolicySchema,
+  updateGecirapInfrastructurePolicySchema,
+} from '@educi/types';
+
+export const createInfrastructureTemplateSchema = createGecirapInfrastructureTemplateSchema;
+export const updateInfrastructureTemplateSchema = updateGecirapInfrastructureTemplateSchema;
+
+export const createInfrastructureStackSchema = createGecirapInfrastructureStackSchema;
+export const updateInfrastructureStackSchema = updateGecirapInfrastructureStackSchema;
+
+export const createProvisioningJobSchema = createGecirapProvisioningJobSchema;
+export const updateProvisioningJobSchema = updateGecirapProvisioningJobSchema;
+
+export const createResourceChangeSchema = createGecirapResourceChangeSchema;
+export const updateResourceChangeSchema = updateGecirapResourceChangeSchema;
+
+export const createDriftDetectionSchema = createGecirapDriftDetectionSchema;
+export const updateDriftDetectionSchema = updateGecirapDriftDetectionSchema;
+
+export const createInfrastructurePolicySchema = createGecirapInfrastructurePolicySchema;
+export const updateInfrastructurePolicySchema = updateGecirapInfrastructurePolicySchema;

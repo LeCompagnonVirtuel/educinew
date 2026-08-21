@@ -1,0 +1,73 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+export const useGefiMarketplaceProductActions = (schoolId: string) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const create = useCallback(async (data: MarketplaceProductCreate): Promise<GefiMarketplaceProduct | null> => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { data: row, error: err } = await supabase
+        .from('gefi_marketplace_product')
+        .insert({ ...data, school_id: schoolId })
+        .select()
+        .single();
+      if (err) throw err;
+      return row;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId]);
+
+  const update = useCallback(async (id: string, data: Partial<MarketplaceProductCreate>): Promise<GefiMarketplaceProduct | null> => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { data: row, error: err } = await supabase
+        .from('gefi_marketplace_product')
+        .update(data)
+        .eq('id', id)
+        .eq('school_id', schoolId)
+        .select()
+        .single();
+      if (err) throw err;
+      return row;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId]);
+
+  const remove = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { error: err } = await supabase
+        .from('gefi_marketplace_product')
+        .delete()
+        .eq('id', id)
+        .eq('school_id', schoolId);
+      if (err) throw err;
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId]);
+
+  return { loading, error, create, update, remove };
+};
+
+interface GefiMarketplaceProduct { id: string; school_id: string; provider_id: string; name: string; price: number; created_at: string; }
+interface MarketplaceProductCreate { provider_id: string; name: string; price: number; }

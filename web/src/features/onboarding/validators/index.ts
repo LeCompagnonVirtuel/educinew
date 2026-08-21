@@ -1,0 +1,31 @@
+export {
+  GeneralInfoSchema,
+  AdminInfoSchema,
+  AcademicConfigSchema,
+  PedagogicStructureSchema,
+  DirectorSchema,
+  ModulesSchema,
+  BrandingSchema,
+  OnboardingDataSchema,
+  CompleteOnboardingSchema,
+  OnboardingStepSchema,
+  SaveDraftSchema,
+  UploadLogoSchema,
+  OnboardingFiltersSchema,
+} from './schemas';
+
+export type {
+  GeneralInfoInput,
+  AdminInfoInput,
+  AcademicConfigInput,
+  PedagogicStructureInput,
+  DirectorInput,
+  ModulesInput,
+  BrandingInput,
+  OnboardingDataInput,
+  CompleteOnboardingInput,
+  OnboardingStepInput,
+  SaveDraftInput,
+  UploadLogoInput,
+  OnboardingFiltersInput,
+} from './schemas';

@@ -1,0 +1,87 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.sentry-build-plugin
+backend/.env
+backend/.env.local
+web/.env
+web/.env.local
+!.env.example
+!backend/.env.example
+!web/.env.example
+
+# Generated secrets
+.env.generated
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Prisma
+prisma/*.db
+*.db
+
+# Expo
+.expo/
+
+# Mobile builds
+mobile/android/
+mobile/ios/
+mobile/web-build/
+
+# EAS credentials
+mobile/credentials/
+
+# Mobile env files
+mobile/.env
+mobile/.env.local
+mobile/.env.production
+!mobile/.env.example
+
+# Antigravity
+.antigravity/security/secrets.env
+.antigravity/team/locks/
+web/tsconfig.tsbuildinfo
+backend/tsconfig.tsbuildinfo
+
+# Playwright
+web/playwright-report/
+web/test-results/
+
+# Credentials & secrets
+login.json
+*.env.generated
+.vercel
+
+# Supabase local temp
+supabase/.temp/
+
+# TypeScript build artifacts
+*.d.ts
+*.js
+*.tsbuildinfo
+!web/src/**/*.js
+!scripts/*.js
+EduCI
+node_modules/

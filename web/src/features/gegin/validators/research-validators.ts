@@ -1,0 +1,40 @@
+import z from "zod";
+
+export const CreateResearchSchema = z.object({
+  school_id: z.string().uuid({ message: "Identifiant de l'école invalide" }),
+  title: z.string().min(1, { message: "Le titre est requis" }).max(500, { message: "Le titre ne doit pas dépasser 500 caractères" }),
+  abstract: z.string().min(1, { message: "Le résumé est requis" }).max(5000, { message: "Le résumé ne doit pas dépasser 5000 caractères" }),
+  authors: z.array(z.string().uuid({ message: "Identifiant d'auteur invalide" })).min(1, { message: "Au moins un auteur est requis" }),
+  type: z.enum(["article", "thesis", "report", "conference", "patent", "book", "other"], { message: "Type de recherche invalide" }),
+  status: z.enum(["draft", "submitted", "under_review", "accepted", "published", "rejected", "archived"], { message: "Statut invalide" }).default("draft"),
+  journal: z.string().max(255, { message: "Le nom du journal ne doit pas dépasser 255 caractères" }).optional(),
+  doi: z.string().max(255, { message: "Le DOI ne doit pas dépasser 255 caractères" }).optional(),
+  isbn: z.string().max(20, { message: "L'ISBN ne doit pas dépasser 20 caractères" }).optional(),
+  volume: z.string().max(50, { message: "Le volume ne doit pas dépasser 50 caractères" }).optional(),
+  issue: z.string().max(50, { message: "Le numéro ne doit pas dépasser 50 caractères" }).optional(),
+  pages: z.string().max(50, { message: "Les pages ne doivent pas dépasser 50 caractères" }).optional(),
+  publication_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de publication invalide" }).optional(),
+  keywords: z.array(z.string()).max(20, { message: "Maximum 20 mots-clés" }).optional(),
+  funding_source: z.string().max(500, { message: "La source de financement ne doit pas dépasser 500 caractères" }).optional(),
+  document_url: z.string().url({ message: "URL du document invalide" }).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const UpdateResearchSchema = z.object({
+  title: z.string().min(1, { message: "Le titre est requis" }).max(500, { message: "Le titre ne doit pas dépasser 500 caractères" }).optional(),
+  abstract: z.string().min(1, { message: "Le résumé est requis" }).max(5000, { message: "Le résumé ne doit pas dépasser 5000 caractères" }).optional(),
+  authors: z.array(z.string().uuid({ message: "Identifiant d'auteur invalide" })).min(1, { message: "Au moins un auteur est requis" }).optional(),
+  type: z.enum(["article", "thesis", "report", "conference", "patent", "book", "other"], { message: "Type de recherche invalide" }).optional(),
+  status: z.enum(["draft", "submitted", "under_review", "accepted", "published", "rejected", "archived"], { message: "Statut invalide" }).optional(),
+  journal: z.string().max(255, { message: "Le nom du journal ne doit pas dépasser 255 caractères" }).optional().nullable(),
+  doi: z.string().max(255, { message: "Le DOI ne doit pas dépasser 255 caractères" }).optional().nullable(),
+  isbn: z.string().max(20, { message: "L'ISBN ne doit pas dépasser 20 caractères" }).optional().nullable(),
+  volume: z.string().max(50, { message: "Le volume ne doit pas dépasser 50 caractères" }).optional().nullable(),
+  issue: z.string().max(50, { message: "Le numéro ne doit pas dépasser 50 caractères" }).optional().nullable(),
+  pages: z.string().max(50, { message: "Les pages ne doivent pas dépasser 50 caractères" }).optional().nullable(),
+  publication_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de publication invalide" }).optional().nullable(),
+  keywords: z.array(z.string()).max(20, { message: "Maximum 20 mots-clés" }).optional(),
+  funding_source: z.string().max(500, { message: "La source de financement ne doit pas dépasser 500 caractères" }).optional().nullable(),
+  document_url: z.string().url({ message: "URL du document invalide" }).optional().nullable(),
+  metadata: z.record(z.unknown()).optional(),
+});

@@ -1,0 +1,1 @@
+export { HrMobileService } from './hr.service';

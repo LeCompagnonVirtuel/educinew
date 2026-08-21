@@ -1,0 +1,53 @@
+export function withAlpha(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+export const COLORS = {
+  primary: '#3525cd',
+  primaryContainer: '#4f46e5',
+  primaryFixed: '#e2dfff',
+  primaryFixedDim: '#c3c0ff',
+  onPrimary: '#ffffff',
+  onPrimaryContainer: '#dad7ff',
+  secondary: '#0060ac',
+  secondaryContainer: '#64a8fe',
+  secondaryFixed: '#d4e3ff',
+  secondaryFixedDim: '#b8d0ff',
+  onSecondary: '#ffffff',
+  onSecondaryContainer: '#001c3a',
+  tertiary: '#7e3000',
+  tertiaryContainer: '#a44100',
+  tertiaryFixed: '#ffdbcc',
+  tertiaryFixedDim: '#ffb695',
+  surface: '#f8f9fa',
+  surfaceDim: '#d9dadb',
+  surfaceBright: '#f8f9fa',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f3f4f5',
+  surfaceContainer: '#edeeef',
+  surfaceContainerHigh: '#e7e8e9',
+  surfaceContainerHighest: '#e1e3e4',
+  surfaceVariant: '#e1e3e4',
+  onSurface: '#191c1d',
+  onSurfaceVariant: '#464555',
+  onBackground: '#191c1d',
+  background: '#f8f9fa',
+  outline: '#777587',
+  outlineVariant: '#c7c4d8',
+  error: '#ba1a1a',
+  errorContainer: '#ffdad6',
+  onError: '#ffffff',
+  inverseSurface: '#2e3132',
+  inverseOnSurface: '#f0f1f2',
+  inversePrimary: '#c3c0ff',
+  white: '#ffffff',
+  black: '#000000',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  text: '#191c1d',
+  textSecondary: '#464555',
+  border: '#c7c4d8',
+};

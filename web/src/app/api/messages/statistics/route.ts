@@ -1,0 +1,74 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/ssr';
+import { logger } from '@educi/logger';
+import { messageStatsSchema } from '@/features/messages/validators/schemas';
+
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+
+    const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+    const schoolId = profile?.school_id;
+    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+
+    const url = new URL(req.url);
+    const params = Object.fromEntries(url.searchParams.entries());
+
+    const validation = messageStatsSchema.safeParse({
+      dateFrom: params.dateFrom || undefined,
+      dateTo: params.dateTo || undefined,
+      conversationId: params.conversationId || undefined,
+      type: params.type || undefined,
+    });
+
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Paramètres invalides', details: validation.error.flatten() }, { status: 400 });
+    }
+
+    const filters = validation.data;
+
+    let query = supabase
+      .from('messages')
+      .select('id, type, status, created_at, sender_id')
+      .eq('school_id', schoolId);
+
+    if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom);
+    if (filters.dateTo) query = query.lte('created_at', filters.dateTo);
+    if (filters.conversationId) query = query.eq('conversation_id', filters.conversationId);
+    if (filters.type) query = query.eq('type', filters.type);
+
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const records = data || [];
+    const total = records.length;
+    const byType = records.reduce((acc: Record<string, number>, r: any) => {
+      acc[r.type] = (acc[r.type] || 0) + 1;
+      return acc;
+    }, {});
+    const byStatus = records.reduce((acc: Record<string, number>, r: any) => {
+      acc[r.status] = (acc[r.status] || 0) + 1;
+      return acc;
+    }, {});
+    const uniqueSenders = new Set(records.map((r: any) => r.sender_id)).size;
+
+    const byDay = records.reduce((acc: Record<string, number>, r: any) => {
+      const day = r.created_at.split('T')[0];
+      acc[day] = (acc[day] || 0) + 1;
+      return acc;
+    }, {});
+
+    return NextResponse.json({
+      total,
+      byType,
+      byStatus,
+      uniqueSenders,
+      byDay,
+    });
+  } catch (error) {
+    logger.error('Error fetching message statistics', error);
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
+  }
+}

@@ -1,0 +1,16 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createEnterpriseRepository } from '@/features/enterprise/repositories/enterprise.repository';
+import { createEnterpriseAnalyticsService } from '@/features/enterprise/services/enterprise-analytics.service';
+import { createClient } from '@supabase/supabase-js';
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const repo = createEnterpriseRepository(supabase);
+    const service = createEnterpriseAnalyticsService(repo);
+    const data = await service.getSnapshots('');
+    return NextResponse.json({ data });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: error.statusCode || 500 });
+  }
+}

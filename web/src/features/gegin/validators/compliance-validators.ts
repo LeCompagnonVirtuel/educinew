@@ -1,0 +1,50 @@
+import z from "zod";
+
+export const CreateComplianceSchema = z.object({
+  school_id: z.string().uuid({ message: "Identifiant de l'école invalide" }),
+  name: z.string().min(1, { message: "Le nom est requis" }).max(255, { message: "Le nom ne doit pas dépasser 255 caractères" }),
+  description: z.string().max(2000, { message: "La description ne doit pas dépasser 2000 caractères" }).optional(),
+  type: z.enum(["regulation", "standard", "policy", "guideline", "audit", "certification"], { message: "Type de conformité invalide" }),
+  category: z.enum(["data_protection", "financial", "academic", "health", "safety", "environmental", "administrative"], { message: "Catégorie invalide" }),
+  status: z.enum(["active", "inactive", "expired", "under_review"], { message: "Statut invalide" }).default("active"),
+  priority: z.enum(["low", "medium", "high", "critical"], { message: "Priorité invalide" }).default("medium"),
+  reference_number: z.string().max(100, { message: "Le numéro de référence ne doit pas dépasser 100 caractères" }).optional(),
+  regulatory_body: z.string().max(255, { message: "L'organisme réglementaire ne doit pas dépasser 255 caractères" }).optional(),
+  effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'entrée en vigueur invalide" }).optional(),
+  expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'expiration invalide" }).optional(),
+  review_frequency: z.enum(["monthly", "quarterly", "semi_annually", "annually"], { message: "Fréquence de révision invalide" }).optional(),
+  last_review_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de dernière révision invalide" }).optional(),
+  next_review_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de prochaine révision invalide" }).optional(),
+  assigned_to: z.string().uuid({ message: "Identifiant du responsable invalide" }).optional().nullable(),
+  documents: z.array(z.string().url({ message: "URL de document invalide" })).optional(),
+  checklist: z.array(z.object({
+    item: z.string().min(1, { message: "L'élément est requis" }).max(500, { message: "L'élément ne doit pas dépasser 500 caractères" }),
+    is_completed: z.boolean().default(false),
+    notes: z.string().max(500, { message: "Les notes ne doivent pas dépasser 500 caractères" }).optional(),
+  })).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const UpdateComplianceSchema = z.object({
+  name: z.string().min(1, { message: "Le nom est requis" }).max(255, { message: "Le nom ne doit pas dépasser 255 caractères" }).optional(),
+  description: z.string().max(2000, { message: "La description ne doit pas dépasser 2000 caractères" }).optional().nullable(),
+  type: z.enum(["regulation", "standard", "policy", "guideline", "audit", "certification"], { message: "Type de conformité invalide" }).optional(),
+  category: z.enum(["data_protection", "financial", "academic", "health", "safety", "environmental", "administrative"], { message: "Catégorie invalide" }).optional(),
+  status: z.enum(["active", "inactive", "expired", "under_review"], { message: "Statut invalide" }).optional(),
+  priority: z.enum(["low", "medium", "high", "critical"], { message: "Priorité invalide" }).optional(),
+  reference_number: z.string().max(100, { message: "Le numéro de référence ne doit pas dépasser 100 caractères" }).optional().nullable(),
+  regulatory_body: z.string().max(255, { message: "L'organisme réglementaire ne doit pas dépasser 255 caractères" }).optional().nullable(),
+  effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'entrée en vigueur invalide" }).optional().nullable(),
+  expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'expiration invalide" }).optional().nullable(),
+  review_frequency: z.enum(["monthly", "quarterly", "semi_annually", "annually"], { message: "Fréquence de révision invalide" }).optional(),
+  last_review_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de dernière révision invalide" }).optional().nullable(),
+  next_review_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de prochaine révision invalide" }).optional().nullable(),
+  assigned_to: z.string().uuid({ message: "Identifiant du responsable invalide" }).optional().nullable(),
+  documents: z.array(z.string().url({ message: "URL de document invalide" })).optional(),
+  checklist: z.array(z.object({
+    item: z.string().min(1, { message: "L'élément est requis" }).max(500, { message: "L'élément ne doit pas dépasser 500 caractères" }),
+    is_completed: z.boolean().default(false),
+    notes: z.string().max(500, { message: "Les notes ne doivent pas dépasser 500 caractères" }).optional(),
+  })).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});

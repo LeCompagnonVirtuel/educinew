@@ -1,0 +1,11 @@
+export { default as ExecutiveDashboardScreen } from './screens/ExecutiveDashboardScreen';
+export { default as AcademicAnalyticsScreen } from './screens/AcademicAnalyticsScreen';
+export { default as FinancialAnalyticsScreen } from './screens/FinancialAnalyticsScreen';
+export { default as HrAnalyticsScreen } from './screens/HrAnalyticsScreen';
+export { default as StudentAnalyticsScreen } from './screens/StudentAnalyticsScreen';
+export { default as TeacherAnalyticsScreen } from './screens/TeacherAnalyticsScreen';
+export { default as ParentAnalyticsScreen } from './screens/ParentAnalyticsScreen';
+export { default as PredictiveAIScreen } from './screens/PredictiveAIScreen';
+export { default as ReportsScreen } from './screens/ReportsScreen';
+export { default as DashboardsScreen } from './screens/DashboardsScreen';
+export { default as ChartsScreen } from './screens/ChartsScreen';

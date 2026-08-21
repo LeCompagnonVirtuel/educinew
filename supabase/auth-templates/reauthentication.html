@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vérification d'identité — EduCI</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F0F2F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#F0F2F5;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;">
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 50%,#8B5CF6 100%);border-radius:16px;padding:14px 28px;box-shadow:0 4px 14px rgba(79,70,229,0.4);">
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td valign="middle" style="padding-right:10px;">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3L1 9L5 11.18V17.18L12 21L19 17.18V11.18L21 10.09V17H23V9L12 3ZM18.82 9L12 12.72L5.18 9L12 5.28L18.82 9ZM17 15.99L12 18.72L7 15.99V12.27L12 15L17 12.27V15.99Z" fill="#FF8A00"/>
+                          </svg>
+                        </td>
+                        <td valign="middle">
+                          <span style="font-size:26px;font-weight:800;color:#FFFFFF;letter-spacing:-0.5px;">Edu</span><span style="font-size:26px;font-weight:800;color:#FF8A00;letter-spacing:-0.5px;">CI</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#FFFFFF;border-radius:16px;border:1px solid #E5E7EB;padding:40px;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 12px rgba(0,0,0,0.04);">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td>
+                    <!-- Shield Icon -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td align="center" style="padding-bottom:24px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border-radius:50px;padding:16px 20px;">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="#DC2626"/>
+                                </svg>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- Title -->
+                    <h1 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;text-align:center;">Vérification d'identité</h1>
+                    <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">
+                      Une opération sensible a été demandée sur votre compte. Veuillez confirmer votre identité en cliquant ci-dessous.
+                    </p>
+                    <!-- Button -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td align="center" style="padding:0 0 24px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 40px;border-radius:10px;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;background:linear-gradient(135deg,#4F46E5,#7C3AED);box-shadow:0 4px 12px rgba(79,70,229,0.35);">Vérifier mon identité</a>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- Warning box -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border-radius:10px;border:1px solid #FECACA;">
+                      <tr>
+                        <td style="padding:16px 20px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                              <td valign="top" style="width:20px;padding-right:10px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M1 21H23L12 2L1 21ZM13 18H11V16H13V18ZM13 14H11V10H13V14Z" fill="#DC2626"/>
+                                </svg>
+                              </td>
+                              <td>
+                                <p style="margin:0;font-size:13px;color:#991B1B;line-height:1.5;font-weight:500;">
+                                  Ce lien expire dans <strong>1 heure</strong>. Si vous n'avez pas initié cette demande, contactez le support immédiatement.
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- Divider -->
+                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:28px 0;">
+                    <p style="margin:0;font-size:12px;color:#9CA3AF;text-align:center;">
+                      Si le bouton ne fonctionne pas, copiez ce lien :
+                    </p>
+                    <p style="margin:8px 0 0;font-size:11px;color:#6B7280;word-break:break-all;text-align:center;background:#F9FAFB;padding:8px 12px;border-radius:6px;">
+                      {{ .ConfirmationURL }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:32px 0 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="border-top:1px solid #E5E7EB;padding-top:24px;text-align:center;">
+                    <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#6B7280;">
+                      <a href="https://educi.live" style="color:#4F46E5;text-decoration:none;">educi.live</a>
+                    </p>
+                    <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;">
+                      Plateforme intelligente de gestion scolaire
+                    </p>
+                    <p style="margin:0;font-size:11px;color:#D1D5DB;">
+                      &copy; 2025 EduCI — Agréé par le Ministère de l'Éducation Nationale de Côte d'Ivoire
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

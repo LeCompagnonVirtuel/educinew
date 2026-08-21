@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/ssr';
+import { logger } from '@educi/logger';
+
+export async function POST(req: NextRequest, context: { params: { id: string } }) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+
+    const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+    const schoolId = profile?.school_id;
+    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+
+    const { id } = await context.params;
+
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('is_pinned')
+      .eq('id', id)
+      .eq('school_id', schoolId)
+      .single();
+
+    if (!existing) return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+
+    const newPinnedStatus = !existing.is_pinned;
+
+    const { data, error } = await supabase
+      .from('conversations')
+      .update({ is_pinned: newPinnedStatus, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ isPinned: newPinnedStatus, message: data });
+  } catch (error) {
+    logger.error('Error pinning conversation', error);
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
+  }
+}

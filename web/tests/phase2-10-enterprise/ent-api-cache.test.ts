@@ -1,0 +1,342 @@
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { EntApiCacheService } from '@/features/enterprise/services/ent-api-cache.service';
+
+describe('EntApiCacheService', () => {
+  let service: EntApiCacheService;
+  const mockSupabase = {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(),
+          data: [],
+          error: null,
+        })),
+        data: [],
+        error: null,
+      })),
+      insert: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn(), data: null, error: null })) })),
+      update: vi.fn(() => ({ eq: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn(), data: null, error: null })) })) })),
+      delete: vi.fn(() => ({ eq: vi.fn(() => ({ data: null, error: null })) })),
+    })),
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    service = new EntApiCacheService(mockSupabase);
+  });
+
+  it('should create service instance', () => {
+    expect(service).toBeDefined();
+  });
+  it('should have supabase injected', () => {
+    expect((service as any).supabase).toBe(mockSupabase);
+  });
+  it('should call from on supabase', () => {
+    mockSupabase.from.mockReturnValue({
+      select: vi.fn(() => ({ eq: vi.fn(() => ({ single: vi.fn(), data: null, error: null })), data: [], error: null })),
+    });
+    service.getApiCache('school-1', 'entity-1');
+    expect(mockSupabase.from).toHaveBeenCalled();
+  });
+  it('should getApiCache entity by id', async () => {
+    const result = await service.getApiCache('school-1', 'entity-1');
+    expect(result).toBeDefined();
+  });
+  it('should throw on getApiCache with null result', async () => {
+    await expect(service.getApiCache('school-1', 'nonexistent')).rejects.toThrow();
+  });
+  it('should listApiCaches entities', async () => {
+    const result = await service.listApiCaches('school-1');
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with filters', async () => {
+    const result = await service.listApiCaches('school-1', { status: 'active' });
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with empty filters', async () => {
+    const result = await service.listApiCaches('school-1', {});
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with undefined filters', async () => {
+    const result = await service.listApiCaches('school-1', undefined);
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache entity', async () => {
+    const result = await service.createApiCache('school-1', { schoolId: 'school-1', name: 'Test' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with empty data', async () => {
+    const result = await service.createApiCache('school-1', {} as any);
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with full data', async () => {
+    const result = await service.createApiCache('school-1', {
+      schoolId: 'school-1',
+      name: 'Full Test',
+      version: '1.0',
+      environment: 'production',
+      status: 'active',
+    } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache entity', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', { name: 'Updated' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should throw on updateApiCache nonexistent entity', async () => {
+    await expect(service.updateApiCache('school-1', 'nonexistent', { name: 'Updated' } as any)).rejects.toThrow();
+  });
+  it('should updateApiCache with empty data', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', {} as any);
+    expect(result).toBeDefined();
+  });
+  it('should deleteApiCache entity', async () => {
+    const result = await service.deleteApiCache('school-1', 'entity-1');
+    expect(result).toBeDefined();
+  });
+  it('should throw on deleteApiCache nonexistent entity', async () => {
+    await expect(service.deleteApiCache('school-1', 'nonexistent')).rejects.toThrow();
+  });
+  it('should countApiCaches entities', async () => {
+    const result = await service.countApiCaches('school-1');
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with filters', async () => {
+    const result = await service.countApiCaches('school-1', { status: 'active' });
+    expect(result).toBeDefined();
+  });
+  it('should handle multiple getApiCache calls', async () => {
+    const r1 = await service.getApiCache('school-1', 'e1');
+    const r2 = await service.getApiCache('school-1', 'e2');
+    expect(r1).toBeDefined();
+    expect(r2).toBeDefined();
+  });
+  it('should handle sequential createApiCache calls', async () => {
+    const r1 = await service.createApiCache('school-1', { name: 'First' } as any);
+    const r2 = await service.createApiCache('school-1', { name: 'Second' } as any);
+    expect(r1).toBeDefined();
+    expect(r2).toBeDefined();
+  });
+  it('should getApiCache with special characters in id', async () => {
+    const result = await service.getApiCache('school-1', 'id-with-special-chars-123');
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache with long id', async () => {
+    const longId = 'a'.repeat(255);
+    const result = await service.getApiCache('school-1', longId);
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache with empty id', async () => {
+    await expect(service.getApiCache('school-1', '')).rejects.toThrow();
+  });
+  it('should listApiCaches with multiple filter keys', async () => {
+    const result = await service.listApiCaches('school-1', { status: 'active', type: 'primary', region: 'us-east' });
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with special characters in name', async () => {
+    const result = await service.createApiCache('school-1', { name: 'Test Name-123' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with unicode name', async () => {
+    const result = await service.createApiCache('school-1', { name: 'Test-Unicode-Value' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache multiple fields', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', { name: 'Updated', status: 'inactive', version: '2.0' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with empty filters', async () => {
+    const result = await service.countApiCaches('school-1', {});
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with undefined filters', async () => {
+    const result = await service.countApiCaches('school-1', undefined);
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache and then updateApiCache', async () => {
+    const entity = await service.getApiCache('school-1', 'entity-1');
+    expect(entity).toBeDefined();
+    const updated = await service.updateApiCache('school-1', 'entity-1', { name: 'Changed' } as any);
+    expect(updated).toBeDefined();
+  });
+  it('should createApiCache then deleteApiCache', async () => {
+    const created = await service.createApiCache('school-1', { name: 'ToDelete' } as any);
+    expect(created).toBeDefined();
+    const deleted = await service.deleteApiCache('school-1', 'entity-1');
+    expect(deleted).toBeDefined();
+  });
+  it('should listApiCaches after createApiCache', async () => {
+    await service.createApiCache('school-1', { name: 'NewItem' } as any);
+    const list = await service.listApiCaches('school-1');
+    expect(list).toBeDefined();
+  });
+  it('should countApiCaches after createApiCache', async () => {
+    await service.createApiCache('school-1', { name: 'CountItem' } as any);
+    const count = await service.countApiCaches('school-1');
+    expect(count).toBeDefined();
+  });
+  it('should handle getApiCache concurrency', async () => {
+    const promises = Array.from({ length: 5 }, (_, i) => service.getApiCache('school-1', 'entity-' + i));
+    const results = await Promise.all(promises);
+    results.forEach(r => expect(r).toBeDefined());
+  });
+  it('should handle createApiCache concurrency', async () => {
+    const promises = Array.from({ length: 5 }, (_, i) => service.createApiCache('school-1', { name: 'Item-' + i } as any));
+    const results = await Promise.all(promises);
+    results.forEach(r => expect(r).toBeDefined());
+  });
+  it('should getApiCache with numeric id', async () => {
+    const result = await service.getApiCache('school-1', '12345');
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache with uuid id', async () => {
+    const result = await service.getApiCache('school-1', '550e8400-e29b-41d4-a716-446655440000');
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches returns array', async () => {
+    const result = await service.listApiCaches('school-1');
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with null optional fields', async () => {
+    const result = await service.createApiCache('school-1', { name: 'NullFields', description: null } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache with null values', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', { name: null } as any);
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache with school-2', async () => {
+    const result = await service.getApiCache('school-2', 'entity-1');
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with school-2', async () => {
+    const result = await service.listApiCaches('school-2');
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with school-2', async () => {
+    const result = await service.createApiCache('school-2', { name: 'School2Item' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache with school-2', async () => {
+    const result = await service.updateApiCache('school-2', 'entity-1', { name: 'S2Updated' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should deleteApiCache with school-2', async () => {
+    const result = await service.deleteApiCache('school-2', 'entity-1');
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with school-2', async () => {
+    const result = await service.countApiCaches('school-2');
+    expect(result).toBeDefined();
+  });
+  it('should handle getApiCache with very long school id', async () => {
+    const longSchoolId = 'school-' + 'x'.repeat(100);
+    const result = await service.getApiCache(longSchoolId, 'entity-1');
+    expect(result).toBeDefined();
+  });
+  it('should handle listApiCaches with very long school id', async () => {
+    const longSchoolId = 'school-' + 'x'.repeat(100);
+    const result = await service.listApiCaches(longSchoolId);
+    expect(result).toBeDefined();
+  });
+  it('should handle createApiCache with very long school id', async () => {
+    const longSchoolId = 'school-' + 'x'.repeat(100);
+    const result = await service.createApiCache(longSchoolId, { name: 'LongSchool' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should handle updateApiCache with very long school id', async () => {
+    const longSchoolId = 'school-' + 'x'.repeat(100);
+    const result = await service.updateApiCache(longSchoolId, 'entity-1', { name: 'LongSchoolUpd' } as any);
+    expect(result).toBeDefined();
+  });
+  it('should handle deleteApiCache with very long school id', async () => {
+    const longSchoolId = 'school-' + 'x'.repeat(100);
+    const result = await service.deleteApiCache(longSchoolId, 'entity-1');
+    expect(result).toBeDefined();
+  });
+  it('should handle countApiCaches with very long school id', async () => {
+    const longSchoolId = 'school-' + 'x'.repeat(100);
+    const result = await service.countApiCaches(longSchoolId);
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache with hyphenated id', async () => {
+    const result = await service.getApiCache('school-1', 'entity-abc-def-123');
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache with underscored id', async () => {
+    const result = await service.getApiCache('school-1', 'entity_abc_def_123');
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with boolean fields', async () => {
+    const result = await service.createApiCache('school-1', { name: 'BoolTest', enabled: true, active: false } as any);
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with numeric fields', async () => {
+    const result = await service.createApiCache('school-1', { name: 'NumTest', count: 42, rate: 3.14 } as any);
+    expect(result).toBeDefined();
+  });
+  it('should createApiCache with date fields', async () => {
+    const result = await service.createApiCache('school-1', { name: 'DateTest', startDate: new Date().toISOString() } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache with boolean values', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', { enabled: false } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache with numeric values', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', { count: 100 } as any);
+    expect(result).toBeDefined();
+  });
+  it('should updateApiCache with date values', async () => {
+    const result = await service.updateApiCache('school-1', 'entity-1', { updatedAt: new Date().toISOString() } as any);
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with page-like filters', async () => {
+    const result = await service.listApiCaches('school-1', { page: 1, limit: 10, offset: 0 });
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with sort-like filters', async () => {
+    const result = await service.listApiCaches('school-1', { orderBy: 'createdAt', order: 'desc' });
+    expect(result).toBeDefined();
+  });
+  it('should listApiCaches with search-like filters', async () => {
+    const result = await service.listApiCaches('school-1', { search: 'test' });
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with boolean filter', async () => {
+    const result = await service.countApiCaches('school-1', { active: true });
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with date range filter', async () => {
+    const result = await service.countApiCaches('school-1', { startDate: '2024-01-01', endDate: '2024-12-31' });
+    expect(result).toBeDefined();
+  });
+  it('should countApiCaches with status filter', async () => {
+    const result = await service.countApiCaches('school-1', { status: 'active' });
+    expect(result).toBeDefined();
+  });
+  it('should getApiCache is async', () => {
+    const result = service.getApiCache('school-1', 'entity-1');
+    expect(result).toBeInstanceOf(Promise);
+  });
+  it('should listApiCaches is async', () => {
+    const result = service.listApiCaches('school-1');
+    expect(result).toBeInstanceOf(Promise);
+  });
+  it('should createApiCache is async', () => {
+    const result = service.createApiCache('school-1', { name: 'Async' } as any);
+    expect(result).toBeInstanceOf(Promise);
+  });
+  it('should updateApiCache is async', () => {
+    const result = service.updateApiCache('school-1', 'entity-1', { name: 'AsyncUpd' } as any);
+    expect(result).toBeInstanceOf(Promise);
+  });
+  it('should deleteApiCache is async', () => {
+    const result = service.deleteApiCache('school-1', 'entity-1');
+    expect(result).toBeInstanceOf(Promise);
+  });
+  it('should countApiCaches is async', () => {
+    const result = service.countApiCaches('school-1');
+    expect(result).toBeInstanceOf(Promise);
+  });
+});

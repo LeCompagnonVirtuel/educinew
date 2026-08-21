@@ -1,0 +1,19 @@
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { createDocumentRepository } from '@/features/documents/repositories/document.repository';
+import { createBatchService } from '@/features/documents/services/batch.service';
+import { createClient } from '@supabase/supabase-js';
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const repo = createDocumentRepository(supabase);
+    const service = createBatchService(repo);
+    const { searchParams } = new URL(request.url);
+    const params = Object.fromEntries(searchParams);
+    const data = await service.getBatchStats(params);
+    return NextResponse.json({ data });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    return NextResponse.json({ error: err.message }, { status: (error as { statusCode?: number }).statusCode || 500 });
+  }
+}

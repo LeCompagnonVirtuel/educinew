@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "composite": true,
+    "paths": {
+      "@educi/types": ["./packages/types/src"],
+      "@educi/errors": ["./packages/errors/src"],
+      "@educi/logger": ["./packages/logger/src"],
+      "@educi/config": ["./packages/config/src"],
+      "@educi/utils": ["./packages/utils/src"]
+    }
+  },
+  "references": [
+    { "path": "./packages/types" },
+    { "path": "./packages/errors" },
+    { "path": "./packages/logger" },
+    { "path": "./packages/config" },
+    { "path": "./packages/utils" }
+  ],
+  "exclude": ["node_modules", "web", "mobile", "supabase"]
+}

@@ -1,0 +1,37 @@
+import { withSupabase } from '@supabase/server';
+
+export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {
+  const supabase = ctx.supabase as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
+
+  const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(profile?.role)) {
+    return Response.json({ error: 'Non autorisé' }, { status: 403 });
+  }
+  const schoolId = profile?.school_id;
+
+  const url = new URL(req.url);
+  const id = url.pathname.split('/').filter(Boolean).at(-2);
+
+  const { data: year } = await supabase.from('academic_years').select('id, school_id').eq('id', id).single();
+  if (!year) return Response.json({ error: 'Année introuvable' }, { status: 404 });
+  if (year.school_id !== schoolId) {
+    return Response.json({ error: 'Non autorisé' }, { status: 403 });
+  }
+
+  await supabase
+    .from('academic_years')
+    .update({ is_current: false, updated_at: new Date().toISOString() })
+    .eq('school_id', schoolId)
+    .eq('is_current', true);
+
+  const { error } = await supabase
+    .from('academic_years')
+    .update({ is_current: true, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) return Response.json({ error: error.message }, { status: 400 });
+
+  return Response.json({ success: true });
+});

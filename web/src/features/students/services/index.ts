@@ -1,0 +1,13 @@
+export { StudentService } from './student.service';
+export { PromotionService } from './promotion.service';
+export { TransferService } from './transfer.service';
+export { GuardianService } from './guardian.service';
+export { MedicalService } from './medical.service';
+export { PhotoService } from './photo.service';
+export { QRCodeService } from './qrcode.service';
+export { StudentCardService } from './student-card.service';
+export { TimelineService } from './timeline.service';
+export { StatisticsService } from './statistics.service';
+export { SearchService } from './search.service';
+export { ValidationService } from './validation.service';
+export { AuditStudentService } from './audit-student.service';

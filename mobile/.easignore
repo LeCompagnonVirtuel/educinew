@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.vscode/
+*.log
+*.hprof
+android/
+ios/
+.expo/
+.env*
+.DS_Store

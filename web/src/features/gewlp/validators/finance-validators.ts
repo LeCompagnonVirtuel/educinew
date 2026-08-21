@@ -1,0 +1,53 @@
+import z from "zod";
+
+export const CreateGEWLPPaymentSchema = z.object({
+  school_id: z.string().uuid({ message: "Identifiant de l'école invalide" }),
+  user_id: z.string().uuid({ message: "Identifiant de l'utilisateur invalide" }),
+  payment_type: z.enum(["tuition", "certification", "training", "internship_fee", "credential", "membership", "service", "other"], { message: "Type de paiement invalide" }),
+  amount: z.number().min(0, { message: "Le montant doit être positif" }).max(999999999, { message: "Le montant est trop élevé" }),
+  currency: z.string().length(3, { message: "La devise doit contenir 3 caractères" }).default("XOF"),
+  status: z.enum(["pending", "processing", "completed", "failed", "refunded", "cancelled", "partial"], { message: "Statut invalide" }).default("pending"),
+  payment_method: z.enum(["mobile_money", "bank_transfer", "card", "cash", "check", "other"], { message: "Mode de paiement invalide" }),
+  provider: z.enum(["money_fusion", "wave", "orange_money", "mtn_momo", "moov_money", "bank", "other"], { message: "Fournisseur de paiement invalide" }),
+  reference: z.string().min(1, { message: "La référence est requise" }).max(255, { message: "La référence ne doit pas dépasser 255 caractères" }),
+  description: z.string().max(500, { message: "La description ne doit pas dépasser 500 caractères" }).optional(),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'échéance invalide" }).optional(),
+  paid_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de paiement invalide" }).optional(),
+  service_id: z.string().uuid({ message: "Identifiant du service invalide" }).optional(),
+  invoice_number: z.string().max(100, { message: "Le numéro de facture ne doit pas dépasser 100 caractères" }).optional(),
+  tax_amount: z.number().min(0, { message: "Le montant de taxe doit être positif" }).default(0),
+  discount_amount: z.number().min(0, { message: "Le montant de remise doit être positif" }).default(0),
+  installments: z.array(z.object({
+    installment_number: z.number().int({ message: "Le numéro de versement doit être un entier" }).min(1, { message: "Le numéro minimum est 1" }),
+    amount: z.number().min(0, { message: "Le montant doit être positif" }),
+    due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'échéance invalide" }),
+    status: z.enum(["pending", "paid", "overdue", "cancelled"], { message: "Statut du versement invalide" }).default("pending"),
+  })).optional(),
+  webhook_url: z.string().url({ message: "URL de webhook invalide" }).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const UpdateGEWLPPaymentSchema = z.object({
+  payment_type: z.enum(["tuition", "certification", "training", "internship_fee", "credential", "membership", "service", "other"], { message: "Type de paiement invalide" }).optional(),
+  amount: z.number().min(0, { message: "Le montant doit être positif" }).max(999999999, { message: "Le montant est trop élevé" }).optional(),
+  currency: z.string().length(3, { message: "La devise doit contenir 3 caractères" }).optional(),
+  status: z.enum(["pending", "processing", "completed", "failed", "refunded", "cancelled", "partial"], { message: "Statut invalide" }).optional(),
+  payment_method: z.enum(["mobile_money", "bank_transfer", "card", "cash", "check", "other"], { message: "Mode de paiement invalide" }).optional(),
+  provider: z.enum(["money_fusion", "wave", "orange_money", "mtn_momo", "moov_money", "bank", "other"], { message: "Fournisseur de paiement invalide" }).optional(),
+  reference: z.string().min(1, { message: "La référence est requise" }).max(255, { message: "La référence ne doit pas dépasser 255 caractères" }).optional(),
+  description: z.string().max(500, { message: "La description ne doit pas dépasser 500 caractères" }).optional().nullable(),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'échéance invalide" }).optional().nullable(),
+  paid_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date de paiement invalide" }).optional().nullable(),
+  service_id: z.string().uuid({ message: "Identifiant du service invalide" }).optional().nullable(),
+  invoice_number: z.string().max(100, { message: "Le numéro de facture ne doit pas dépasser 100 caractères" }).optional().nullable(),
+  tax_amount: z.number().min(0, { message: "Le montant de taxe doit être positif" }).optional(),
+  discount_amount: z.number().min(0, { message: "Le montant de remise doit être positif" }).optional(),
+  installments: z.array(z.object({
+    installment_number: z.number().int({ message: "Le numéro de versement doit être un entier" }).min(1, { message: "Le numéro minimum est 1" }),
+    amount: z.number().min(0, { message: "Le montant doit être positif" }),
+    due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date d'échéance invalide" }),
+    status: z.enum(["pending", "paid", "overdue", "cancelled"], { message: "Statut du versement invalide" }).default("pending"),
+  })).optional(),
+  webhook_url: z.string().url({ message: "URL de webhook invalide" }).optional().nullable(),
+  metadata: z.record(z.unknown()).optional(),
+});

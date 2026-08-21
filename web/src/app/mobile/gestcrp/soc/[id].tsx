@@ -1,0 +1,119 @@
+'use client';
+
+import { useState } from 'react';
+
+interface SOCIncidentDetail {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'NEW' | 'TRIAGED' | 'INVESTIGATING' | 'CONTAINED' | 'ERADICATED' | 'RECOVERED' | 'CLOSED';
+  category: string;
+  source: string;
+  affected_systems: string[];
+  affected_users: string[];
+  risk_score: number;
+  estimated_impact: number;
+  timeline: { timestamp: string; action: string; actor: string }[];
+}
+
+const MOCK_DETAIL: SOCIncidentDetail = {
+  id: '1',
+  title: 'Brute Force Login Attempt',
+  description: 'Multiple failed login attempts detected from external IP targeting admin accounts.',
+  severity: 'HIGH',
+  status: 'INVESTIGATING',
+  category: 'Authentication',
+  source: 'SIEM Alert #4521',
+  affected_systems: ['auth-server-01', 'admin-portal'],
+  affected_users: ['admin@school.ci'],
+  risk_score: 78,
+  estimated_impact: 65,
+  timeline: [
+    { timestamp: '2026-08-08T10:00:00Z', action: 'Alert triggered', actor: 'SIEM' },
+    { timestamp: '2026-08-08T10:05:00Z', action: 'Incident created', actor: 'SOC Analyst' },
+    { timestamp: '2026-08-08T10:15:00Z', action: 'IP blocked at firewall', actor: 'Automated' },
+    { timestamp: '2026-08-08T10:30:00Z', action: 'Investigation started', actor: 'Security Lead' },
+  ],
+};
+
+function getSeverityColor(sev: string): string {
+  switch (sev) {
+    case 'CRITICAL': return 'text-red-700 bg-red-50';
+    case 'HIGH': return 'text-orange-700 bg-orange-50';
+    case 'MEDIUM': return 'text-yellow-700 bg-yellow-50';
+    case 'LOW': return 'text-green-700 bg-green-50';
+    default: return 'text-gray-700 bg-gray-50';
+  }
+}
+
+export default function SOCIncidentDetailPage() {
+  const [incident] = useState<SOCIncidentDetail>(MOCK_DETAIL);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="mb-6">
+        <p className="text-sm text-gray-500 mb-1">Incident Detail</p>
+        <h1 className="text-xl font-bold text-gray-900">{incident.title}</h1>
+        <p className="text-sm text-gray-600 mt-1">{incident.description}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500">Severity</p>
+          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${getSeverityColor(incident.severity)}`}>
+            {incident.severity}
+          </span>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500">Status</p>
+          <p className="text-sm font-bold text-gray-900 mt-1">{incident.status.replace(/_/g, ' ')}</p>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500">Risk Score</p>
+          <p className="text-lg font-bold text-red-600">{incident.risk_score}</p>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500">Est. Impact</p>
+          <p className="text-lg font-bold text-orange-600">{incident.estimated_impact}</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Affected Systems</h2>
+        <div className="flex flex-wrap gap-2">
+          {incident.affected_systems.map((sys) => (
+            <span key={sys} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">{sys}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Affected Users</h2>
+        <div className="flex flex-wrap gap-2">
+          {incident.affected_users.map((user) => (
+            <span key={user} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">{user}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Timeline</h2>
+        <div className="space-y-3">
+          {incident.timeline.map((event, idx) => (
+            <div key={idx} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                {idx < incident.timeline.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
+              </div>
+              <div className="pb-3">
+                <p className="text-sm font-medium text-gray-900">{event.action}</p>
+                <p className="text-xs text-gray-500">{event.actor} · {new Date(event.timestamp).toLocaleTimeString()}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
