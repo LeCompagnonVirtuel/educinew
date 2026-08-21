@@ -1,3 +1,4 @@
+import { createClient } from '@/lib/supabase/client';
 import { logger } from '@educi/logger';
 
 export interface AuditSchoolEvent {
@@ -12,12 +13,24 @@ export interface AuditSchoolEvent {
 
 export class AuditSchoolService {
   async log(event: AuditSchoolEvent): Promise<void> {
-    logger.info('School audit event', {
-      action: event.action,
-      entity: event.entity,
-      schoolId: event.schoolId,
-      userId: event.userId,
-      details: event.details,
-    }, 'schools');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('audit_logs').insert({
+        action: event.action,
+        entity_type: event.entity,
+        entity_id: event.schoolId || null,
+        user_id: event.userId || null,
+        school_id: event.schoolId || null,
+        details: event.details || {},
+        ip_address: event.ipAddress || null,
+        user_agent: event.userAgent || null,
+      });
+
+      if (error) {
+        logger.error('Failed to write audit log', { error: error.message }, 'schools');
+      }
+    } catch {
+      logger.warn('Audit log table may not exist', { action: event.action }, 'schools');
+    }
   }
 }

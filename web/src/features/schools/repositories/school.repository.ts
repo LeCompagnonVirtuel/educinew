@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import type { SchoolRepository, SchoolFilters, SchoolListResult } from '../types';
 import type { School, SchoolSettings, SchoolBranding, SchoolStatistics, SchoolStatus, SchoolCreationRequest, SchoolUpdateRequest } from '@educi/types';
-import { SchoolNotFoundError, SchoolSlugConflictError, SchoolLogoError, SchoolArchiveError, SchoolRestoreError, SchoolDeleteError } from '@educi/errors';
+import { SchoolNotFoundError, SchoolSlugConflictError, SchoolLogoError, SchoolArchiveError, SchoolRestoreError, SchoolDeleteError, ConflictError } from '@educi/errors';
 import { logger } from '@educi/logger';
 
 function generateSlug(name: string): string {
@@ -22,14 +22,24 @@ export function createSchoolRepository(): SchoolRepository {
     async create(data: SchoolCreationRequest): Promise<School> {
       const slug = generateSlug(data.name);
 
-      const { data: existing } = await supabase
+      const { data: existingName } = await supabase
         .from('schools')
         .select('id')
         .eq('name', data.name)
-        .single();
+        .limit(1);
 
-      if (existing) {
-        throw new SchoolSlugConflictError(slug);
+      if (existingName && existingName.length > 0) {
+        throw new ConflictError(`Le nom "${data.name}" est déjà utilisé par un autre établissement`);
+      }
+
+      const { data: existingEmail } = await supabase
+        .from('schools')
+        .select('id')
+        .eq('email', data.email)
+        .limit(1);
+
+      if (existingEmail && existingEmail.length > 0) {
+        throw new ConflictError(`L'email "${data.email}" est déjà utilisé par un autre établissement`);
       }
 
       const { data: school, error } = await supabase
@@ -37,6 +47,7 @@ export function createSchoolRepository(): SchoolRepository {
         .insert({
           name: data.name,
           email: data.email,
+          slug,
           phone: data.phone || null,
           address: data.address || null,
           city: data.city || null,
@@ -53,7 +64,10 @@ export function createSchoolRepository(): SchoolRepository {
 
       if (error) {
         logger.error('Failed to create school', { error: error.message }, 'schools');
-        throw new SchoolSlugConflictError(slug);
+        if (error.code === '23505') {
+          throw new SchoolSlugConflictError(slug);
+        }
+        throw error;
       }
 
       logger.info('School created', { schoolId: school.id, name: school.name }, 'schools');

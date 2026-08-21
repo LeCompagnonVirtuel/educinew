@@ -1,3 +1,4 @@
+import { createClient } from '@/lib/supabase/client';
 import { logger } from '@educi/logger';
 
 export class SlugService {
@@ -13,8 +14,16 @@ export class SlugService {
   }
 
   async isUnique(slug: string, excludeId?: string): Promise<boolean> {
-    logger.debug('Checking slug uniqueness', { slug, excludeId }, 'schools');
-    return true;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('schools')
+      .select('id')
+      .eq('slug', slug)
+      .limit(1);
+
+    if (!data || data.length === 0) return true;
+    if (excludeId && data[0].id === excludeId) return true;
+    return false;
   }
 
   async generateUnique(name: string, excludeId?: string): Promise<string> {

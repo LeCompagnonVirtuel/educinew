@@ -1,68 +1,57 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSupabase } from '@/lib/api/shared';
+import { useSchools } from '@/features/schools/hooks';
+import { createSchoolRepository } from '@/features/schools/repositories';
 import {
   Building2, Search, CheckCircle, XCircle, AlertTriangle,
   MoreVertical, ChevronLeft, ChevronRight, Power, Trash2,
 } from 'lucide-react';
 
-interface School {
-  id: string;
-  name: string;
-  is_active: boolean;
-  subscription_plan: string | null;
-  created_at: string;
-  city: string | null;
-  country: string | null;
-}
-
 export default function SuperAdminSchoolsPage() {
-  const [schools, setSchools] = useState<School[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, fetchSchools } = useSchools();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [actionMenu, setActionMenu] = useState<string | null>(null);
   const pageSize = 15;
 
-  useEffect(() => { loadSchools(); }, [page, search, statusFilter]);
-
-  async function loadSchools() {
-    setLoading(true);
-    const supabase = getSupabase();
-    let query = supabase
-      .from('schools')
-      .select('id, name, is_active, subscription_plan, created_at, city, country', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range((page - 1) * pageSize, page * pageSize - 1);
-
-    if (search) query = query.ilike('name', `%${search}%`);
-    if (statusFilter === 'active') query = query.eq('is_active', true);
-    if (statusFilter === 'suspended') query = query.eq('is_active', false);
-
-    const { data, count } = await query;
-    setSchools(data || []);
-    setTotal(count || 0);
-    setLoading(false);
-  }
+  useEffect(() => {
+    fetchSchools({
+      page,
+      limit: pageSize,
+      search: search || undefined,
+      status: statusFilter as any || undefined,
+    });
+  }, [page, search, statusFilter, fetchSchools]);
 
   async function toggleSchool(id: string, activate: boolean) {
-    const supabase = getSupabase();
-    await supabase.from('schools').update({ is_active: activate }).eq('id', id);
+    const repo = createSchoolRepository();
+    await repo.updateStatus(id, activate ? 'ACTIVE' : 'ARCHIVED');
     setActionMenu(null);
-    loadSchools();
+    fetchSchools({
+      page,
+      limit: pageSize,
+      search: search || undefined,
+      status: statusFilter as any || undefined,
+    });
   }
 
   async function deleteSchool(id: string) {
     if (!confirm('Supprimer définitivement cet établissement ? Cette action est irréversible.')) return;
-    const supabase = getSupabase();
-    await supabase.from('schools').delete().eq('id', id);
+    const repo = createSchoolRepository();
+    await repo.delete(id);
     setActionMenu(null);
-    loadSchools();
+    fetchSchools({
+      page,
+      limit: pageSize,
+      search: search || undefined,
+      status: statusFilter as any || undefined,
+    });
   }
 
+  const schools = data?.data || [];
+  const total = data?.total || 0;
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -84,8 +73,8 @@ export default function SuperAdminSchoolsPage() {
         </div>
         <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
           <option value="">Tous les statuts</option>
-          <option value="active">Actifs</option>
-          <option value="suspended">Suspendus</option>
+          <option value="ACTIVE">Actifs</option>
+          <option value="ARCHIVED">Suspendus</option>
         </select>
       </div>
 
@@ -114,7 +103,7 @@ export default function SuperAdminSchoolsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {schools.map((school) => (
+                {schools.map((school: any) => (
                   <tr key={school.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
