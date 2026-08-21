@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from '@/components/Providers';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: 'EduCI — Gestion scolaire intelligente pour l\'Afrique',
@@ -22,8 +21,6 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = 'force-dynamic';
-
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -39,9 +36,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth" suppressHydrationWarning>
       <body className="antialiased font-sans">
-        <ErrorBoundary>
-          <Providers>{children}</Providers>
-        </ErrorBoundary>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
