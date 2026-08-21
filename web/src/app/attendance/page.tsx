@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RoleLayout from '@/components/layout/RoleLayout';
+import QRScanner from '@/components/ui/QRScanner';
 import { sbClasses, sbAttendance } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { exportToFile, type ExportColumn } from '@/lib/export-utils';
@@ -366,13 +367,11 @@ export default function AttendancePage() {
   const handleStartQRScanner = () => {
     setQrActive(true);
     setQrScanning(true);
-    showToast('Scanner QR Code activé', 'info');
   };
 
   const handleStopQRScanner = () => {
     setQrActive(false);
     setQrScanning(false);
-    showToast('Scanner QR Code désactivé');
   };
 
   const handleScanQRCode = async (code: string) => {
@@ -386,7 +385,6 @@ export default function AttendancePage() {
     } catch (err: any) {
       showToast(err?.message || 'Élève non trouvé', 'error');
     }
-    setQrCode('');
   };
 
   const handleManualScan = () => {
@@ -395,6 +393,7 @@ export default function AttendancePage() {
       return;
     }
     handleScanQRCode(qrCode.trim());
+    setQrCode('');
   };
 
   // SMS handlers
@@ -1099,30 +1098,33 @@ export default function AttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Scanner */}
             <div className="md:col-span-2">
-              <div className={`border-2 border-dashed rounded-xl p-8 text-center ${qrScanning ? 'border-purple-400 bg-purple-50' : 'border-slate-300'}`}>
-                {qrScanning ? (
-                  <div className="space-y-4">
-                    <div className="w-24 h-24 mx-auto bg-slate-900 rounded-lg flex items-center justify-center relative">
-                      <Camera size={48} className="text-white" />
-                      <div className="absolute inset-0 border-4 border-purple-500 animate-pulse rounded-lg" />
-                    </div>
-                    <p className="text-purple-600 font-medium">Scanner actif — ou saisir un matricule :</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={qrCode}
-                        onChange={(e) => setQrCode(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
-                        placeholder="16137807D"
-                        className="px-3 py-2 border rounded-lg text-sm flex-1"
-                        autoFocus
-                      />
-                      <button onClick={handleManualScan} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700">
-                        Valider
-                      </button>
-                    </div>
+              {qrScanning ? (
+                <div className="space-y-4">
+                  <QRScanner
+                    onScan={(code) => {
+                      handleScanQRCode(code);
+                    }}
+                    onError={(err) => showToast(err, 'error')}
+                    running={qrScanning}
+                  />
+                  <p className="text-purple-600 font-medium text-center">Scanner actif — ou saisir un matricule :</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={qrCode}
+                      onChange={(e) => setQrCode(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
+                      placeholder="Matricule de l'élève"
+                      className="px-3 py-2 border rounded-lg text-sm flex-1"
+                      autoFocus
+                    />
+                    <button onClick={handleManualScan} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700">
+                      Valider
+                    </button>
                   </div>
-                ) : (
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
                   <div className="space-y-4">
                     <QrCode size={48} className="mx-auto text-slate-300" />
                     <p className="text-slate-500">Cliquez sur Démarrer pour activer le scanner</p>
@@ -1130,8 +1132,8 @@ export default function AttendancePage() {
                       <Zap size={18} /> Démarrer le scanner
                     </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
               {qrScanning && (
                 <button onClick={handleStopQRScanner} className="mt-4 w-full py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
                   Arrêter le scanner
