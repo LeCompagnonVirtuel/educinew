@@ -22,18 +22,18 @@ export async function GET(
 ) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -43,7 +43,7 @@ export async function GET(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
     }
 
     const { data, error } = await supabase
@@ -55,7 +55,7 @@ export async function GET(
       .single();
 
     if (error || !data) {
-      return NextResponse.json({ error: 'Campagne de dons non trouvÃ©' }, { status: 404 });
+      return NextResponse.json({ error: 'Campagne de dons non trouvé' }, { status: 404 });
     }
 
     return NextResponse.json({ data });
@@ -73,18 +73,18 @@ export async function PUT(
 ) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -94,7 +94,7 @@ export async function PUT(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'DIRECTEUR', 'COMPTABLE'];
@@ -119,7 +119,7 @@ export async function PUT(
       .single();
 
     if (!existing || existing.school_id !== dbUser.school_id) {
-      return NextResponse.json({ error: 'Campagne de dons non trouvÃ©' }, { status: 404 });
+      return NextResponse.json({ error: 'Campagne de dons non trouvé' }, { status: 404 });
     }
 
     const { data, error } = await supabase
@@ -130,7 +130,7 @@ export async function PUT(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: `Erreur mise Ã  jour Campagne de dons: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur mise à jour Campagne de dons: ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -148,18 +148,18 @@ export async function DELETE(
 ) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -169,7 +169,7 @@ export async function DELETE(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN'];
@@ -184,7 +184,7 @@ export async function DELETE(
       .single();
 
     if (!existing || existing.school_id !== dbUser.school_id) {
-      return NextResponse.json({ error: 'Campagne de dons non trouvÃ©' }, { status: 404 });
+      return NextResponse.json({ error: 'Campagne de dons non trouvé' }, { status: 404 });
     }
 
     const { error } = await supabase
@@ -196,7 +196,7 @@ export async function DELETE(
       return NextResponse.json({ error: `Erreur suppression Campagne de dons: ${error.message}` }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Campagne de dons supprimÃ© avec succÃ¨s' });
+    return NextResponse.json({ message: 'Campagne de dons supprimé avec succès' });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erreur serveur' },

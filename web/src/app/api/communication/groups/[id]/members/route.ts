@@ -7,12 +7,12 @@ import { cookies } from 'next/headers';
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
     // --- Auth check ---
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const authSupabase = await createClient();
     const { data: { user }, error: authError } = await authSupabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
   try {
     const body = await request.json();
@@ -30,12 +30,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
     // --- Auth check ---
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const authSupabase = await createClient();
     const { data: { user }, error: authError } = await authSupabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
   try {
     const { searchParams } = new URL(request.url);

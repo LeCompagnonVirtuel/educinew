@@ -21,12 +21,12 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { data: { user } } = await supabase.auth.getUser();

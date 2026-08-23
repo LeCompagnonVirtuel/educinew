@@ -7,12 +7,12 @@ import { cookies } from 'next/headers';
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
     // --- Auth check ---
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const authSupabase = await createClient();
     const { data: { user }, error: authError } = await authSupabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -31,12 +31,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
     // --- Auth check ---
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const authSupabase = await createClient();
     const { data: { user }, error: authError } = await authSupabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
   try {
     const body = await request.json();

@@ -34,12 +34,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = getSupabaseAdmin();
     const { sessionToken } = await request.json();
@@ -67,13 +67,13 @@ export async function POST(request: NextRequest) {
     // === OWNER VALIDATIONS ===
     // Email
     if (!draft.owner_email) {
-      errors.push('Email du propriÃ©taire requis');
+      errors.push('Email du propriétaire requis');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.owner_email)) {
       errors.push('Format email invalide');
     } else if (isDisposableEmail(draft.owner_email)) {
-      errors.push('Les emails jetables ne sont pas autorisÃ©s');
+      errors.push('Les emails jetables ne sont pas autorisés');
     } else if (isForbiddenDomain(draft.owner_email)) {
-      errors.push('Domaine email non autorisÃ©');
+      errors.push('Domaine email non autorisé');
     } else {
       score += 2;
       // Check uniqueness
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         .eq('email', draft.owner_email.toLowerCase().trim())
         .single();
       if (existingUser) {
-        errors.push('Un compte existe dÃ©jÃ  avec cet email');
+        errors.push('Un compte existe déjà avec cet email');
       } else {
         score += 1;
       }
@@ -91,14 +91,14 @@ export async function POST(request: NextRequest) {
 
     // Last name
     if (!draft.owner_last_name || draft.owner_last_name.length < 2) {
-      errors.push('Nom du propriÃ©taire requis (min 2 caractÃ¨res)');
+      errors.push('Nom du propriétaire requis (min 2 caractères)');
     } else {
       score += 2;
     }
 
     // First name
     if (!draft.owner_first_name || draft.owner_first_name.length < 2) {
-      errors.push('PrÃ©nom du propriÃ©taire requis (min 2 caractÃ¨res)');
+      errors.push('Prénom du propriétaire requis (min 2 caractères)');
     } else {
       score += 2;
     }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         .eq('phone', draft.owner_phone)
         .single();
       if (existingPhone) {
-        warnings.push('Ce numÃ©ro de tÃ©lÃ©phone est dÃ©jÃ  utilisÃ©');
+        warnings.push('Ce numéro de téléphone est déjà utilisé');
       } else {
         score += 1;
       }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     // === SCHOOL VALIDATIONS ===
     if (!draft.school_official_name || draft.school_official_name.length < 3) {
-      errors.push("Nom de l'Ã©tablissement requis (min 3 caractÃ¨res)");
+      errors.push("Nom de l'établissement requis (min 3 caractères)");
     } else {
       score += 2;
       // Check school name uniqueness
@@ -136,14 +136,14 @@ export async function POST(request: NextRequest) {
         .ilike('name', draft.school_official_name)
         .single();
       if (existingSchool) {
-        warnings.push("Un Ã©tablissement avec ce nom existe dÃ©jÃ ");
+        warnings.push("Un établissement avec ce nom existe déjà");
       } else {
         score += 1;
       }
     }
 
     if (!draft.school_type) {
-      errors.push("Type d'Ã©tablissement requis");
+      errors.push("Type d'établissement requis");
     } else {
       score += 2;
     }
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
           draft.location_longitude >= -180 && draft.location_longitude <= 180) {
         score += 2;
       } else {
-        warnings.push('CoordonnÃ©es GPS invalides');
+        warnings.push('Coordonnées GPS invalides');
       }
     }
 
@@ -198,12 +198,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
       const cycles = typeof draft.academic_cycles === 'string' ? JSON.parse(draft.academic_cycles) : draft.academic_cycles;
       if (Array.isArray(cycles) && cycles.length > 0) score += 1;
@@ -212,12 +212,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
       const levels = typeof draft.academic_levels === 'string' ? JSON.parse(draft.academic_levels) : draft.academic_levels;
       if (Array.isArray(levels) && levels.length > 0) score += 1;
@@ -229,12 +229,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
       modules = typeof draft.modules === 'string' ? JSON.parse(draft.modules) : draft.modules;
     } catch { /* invalid JSON */ }

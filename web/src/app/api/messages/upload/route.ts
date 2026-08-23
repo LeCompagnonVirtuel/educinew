@@ -9,16 +9,16 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (file.size > 25 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Le fichier ne doit pas dÃ©passer 25MB' }, { status: 400 });
+      return NextResponse.json({ error: 'Le fichier ne doit pas dépasser 25MB' }, { status: 400 });
     }
 
     const fileExt = file.name.split('.').pop();

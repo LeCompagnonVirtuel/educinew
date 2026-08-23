@@ -13,7 +13,7 @@ function getVerificationSecret(): string {
   return secret;
 }
 
-const GENERIC_MESSAGE = 'Si un compte existe avec cette adresse, un e-mail de confirmation a Ã©tÃ© envoyÃ©.';
+const GENERIC_MESSAGE = 'Si un compte existe avec cette adresse, un e-mail de confirmation a été envoyé.';
 const TOKEN_EXPIRY_HOURS = 24;
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
@@ -73,12 +73,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const body = await request.json();
     const { email } = body;
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const allowed = await checkRateLimitDB(supabase, normalizedEmail);
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Trop de demandes. RÃ©essayez dans 5 minutes.' },
+        { error: 'Trop de demandes. Réessayez dans 5 minutes.' },
         { status: 429 }
       );
     }
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
         .update({ email_verified: true, email_verified_at: new Date().toISOString(), is_active: true, status: 'ACTIVE' })
         .eq('id', user.id);
 
-      return NextResponse.json({ success: true, message: 'Votre email a Ã©tÃ© confirmÃ©. Vous pouvez maintenant vous connecter.', emailConfirmed: true });
+      return NextResponse.json({ success: true, message: 'Votre email a été confirmé. Vous pouvez maintenant vous connecter.', emailConfirmed: true });
     }
 
     // Check if user has a pending enterprise draft â€” redirect to registration/resend flow
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({ email: normalizedEmail, draftId: pendingDraft.id }),
       });
       const resendData = await resendResponse.json().catch(() => ({}));
-      return NextResponse.json({ success: true, message: 'Email de confirmation renvoyÃ©.' });
+      return NextResponse.json({ success: true, message: 'Email de confirmation renvoyé.' });
     }
 
     const resendKey = process.env.RESEND_API_KEY;
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     const adminName = user.user_metadata?.name || normalizedEmail.split('@')[0];
-    const schoolName = draft?.school_name || 'Votre Ã©tablissement';
+    const schoolName = draft?.school_name || 'Votre établissement';
 
     // Send email with verification link
     const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       console.error('[resend-confirmation] Resend error:', errorData);
       return NextResponse.json({
         success: false,
-        error: 'Impossible d\'envoyer l\'email. RÃ©essayez dans quelques instants.',
+        error: 'Impossible d\'envoyer l\'email. Réessayez dans quelques instants.',
       }, { status: 500 });
     }
 
@@ -283,7 +283,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
             <tr><td>
               <h1 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;text-align:center;">Confirmez votre adresse e-mail</h1>
               <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Bonjour <strong>${name}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir crÃ©Ã© un compte EduCI pour <strong>${schoolName}</strong>.</p>
+              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir créé un compte EduCI pour <strong>${schoolName}</strong>.</p>
               <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
             </td></tr>
             <tr><td align="center" style="padding:16px 0 32px;">
@@ -292,7 +292,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
             <tr><td>
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#FEF3C7;border-radius:10px;border:1px solid #FDE68A;">
                 <tr><td style="padding:16px 20px;">
-                  <p style="margin:0;font-size:13px;color:#92400E;line-height:1.5;">â±ï¸ Ce lien expire dans <strong>24 heures</strong>. Si vous n'Ãªtes pas Ã  l'origine de cette demande, ignorez cet e-mail.</p>
+                  <p style="margin:0;font-size:13px;color:#92400E;line-height:1.5;">â±ï¸ Ce lien expire dans <strong>24 heures</strong>. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
                 </td></tr>
               </table>
             </td></tr>
@@ -309,7 +309,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
         <tr><td style="padding:32px 0 0;text-align:center;">
           <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#6B7280;"><a href="https://educi.live" style="color:#4F46E5;text-decoration:none;">educi.live</a></p>
           <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;">Plateforme intelligente de gestion scolaire</p>
-          <p style="margin:0;font-size:11px;color:#D1D5DB;">Â© 2025 EduCI â€” L'Ã©quipe EduCI</p>
+          <p style="margin:0;font-size:11px;color:#D1D5DB;">Â© 2025 EduCI â€” L'équipe EduCI</p>
         </td></tr>
       </table>
     </td></tr>

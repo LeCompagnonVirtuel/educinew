@@ -13,19 +13,19 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const body = await request.json();
     const { userId, adminName, adminEmail, schoolName, address, phone, schoolEmail, region, city, schoolType } = body;
 
     if (!userId || !adminName || !adminEmail || !schoolName) {
       return NextResponse.json(
-        { error: 'DonnÃ©es manquantes pour complÃ©ter l\'inscription.' },
+        { error: 'Données manquantes pour compléter l\'inscription.' },
         { status: 400 }
       );
     }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Verify caller identity via JWT
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const anonSupabase = createClient(
@@ -45,11 +45,11 @@ export async function POST(request: NextRequest) {
     const { data: { user: authUser }, error: authError } = await anonSupabase.auth.getUser(token);
 
     if (authError || !authUser) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     if (authUser.id !== userId) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (schoolError) {
       console.error('[complete-registration] RPC error:', schoolError.message);
       return NextResponse.json(
-        { error: 'Erreur lors de la crÃ©ation de l\'Ã©tablissement.', details: schoolError.message },
+        { error: 'Erreur lors de la création de l\'établissement.', details: schoolError.message },
         { status: 500 }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     const schoolId = typeof school === 'object' ? school.id : school;
     if (!schoolId) {
       return NextResponse.json(
-        { error: 'Aucune donnÃ©e d\'Ã©tablissement retournÃ©e.' },
+        { error: 'Aucune donnée d\'établissement retournée.' },
         { status: 500 }
       );
     }

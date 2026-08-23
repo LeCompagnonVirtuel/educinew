@@ -10,16 +10,16 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
       .eq('school_id', schoolId)
       .single();
 
-    if (error) return NextResponse.json({ error: 'Message non trouvÃ©' }, { status: 404 });
+    if (error) return NextResponse.json({ error: 'Message non trouvé' }, { status: 404 });
     return NextResponse.json(data);
   } catch (error) {
     logger.error('Error fetching message', error);
@@ -47,16 +47,16 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
         field: issue.path.join('.'),
         message: issue.message,
       }));
-      return NextResponse.json({ error: 'DonnÃ©es invalides', errors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides', errors }, { status: 400 });
     }
 
     const { data: existing } = await supabase
@@ -81,9 +81,9 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       .eq('school_id', schoolId)
       .single();
 
-    if (!existing) return NextResponse.json({ error: 'Message non trouvÃ©' }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: 'Message non trouvé' }, { status: 404 });
     if (existing.sender_id !== user.id) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
     const { data, error } = await supabase
@@ -106,16 +106,16 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
@@ -128,7 +128,7 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     if (permanent) {
       const role = profile?.role;
       if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) {
-        return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
     }
 
@@ -148,9 +148,9 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
         .eq('school_id', schoolId)
         .single();
 
-      if (!existing) return NextResponse.json({ error: 'Message non trouvÃ©' }, { status: 404 });
+      if (!existing) return NextResponse.json({ error: 'Message non trouvé' }, { status: 404 });
       if (existing.sender_id !== user.id && !['ADMIN', 'SUPER_ADMIN'].includes(profile?.role)) {
-        return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
       const { error } = await supabase

@@ -11,12 +11,12 @@ export async function GET(
 ) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +24,7 @@ export async function GET(
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { id } = await params;
 
@@ -35,7 +35,7 @@ export async function GET(
       .is('deleted_at', null)
       .single();
 
-    if (error || !record) return NextResponse.json({ error: 'PrÃ©vision introuvable' }, { status: 404 });
+    if (error || !record) return NextResponse.json({ error: 'Prévision introuvable' }, { status: 404 });
 
     return NextResponse.json(record);
   } catch (error) {

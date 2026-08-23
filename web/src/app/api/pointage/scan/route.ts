@@ -59,26 +59,26 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    if (!schoolId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
     const body = await req.json();
     const bodyValidation = qrScanSchema.safeParse(body);
     if (!bodyValidation.success) {
-      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'DonnÃ©es invalides' }, { status: 400 });
+      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'Données invalides' }, { status: 400 });
     }
     const { qr_code, scan_type, device_info, latitude, longitude, operator_name } = bodyValidation.data;
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       }
       if (!verifyQRSignature(qr_code, secret)) {
         return NextResponse.json({
-          error: 'Signature QR invalide â€” tentative de falsification dÃ©tectÃ©e',
+          error: 'Signature QR invalide â€” tentative de falsification détectée',
           code: 'INVALID_SIGNATURE',
         }, { status: 400 });
       }
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
 
       // Check expiry
       if (payload.exp && Date.now() > payload.exp) {
-        return NextResponse.json({ error: 'QR code expirÃ©', code: 'QR_EXPIRED' }, { status: 400 });
+        return NextResponse.json({ error: 'QR code expiré', code: 'QR_EXPIRED' }, { status: 400 });
       }
       // Check issued-at age (max 24h even if exp not reached)
       if (payload.iat && (Date.now() - payload.iat) > 24 * 60 * 60 * 1000) {
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       // Validate school_id in signed token â€” prevent cross-school QR usage
       if (payload.school_id && payload.school_id !== schoolId) {
         return NextResponse.json({
-          error: 'Ce QR Code appartient Ã  un autre Ã©tablissement',
+          error: 'Ce QR Code appartient à un autre établissement',
           code: 'WRONG_SCHOOL',
         }, { status: 403 });
       }
@@ -165,11 +165,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (!legacyQr.is_active) {
-        return NextResponse.json({ error: 'QR code dÃ©sactivÃ©', code: 'QR_INACTIVE' }, { status: 400 });
+        return NextResponse.json({ error: 'QR code désactivé', code: 'QR_INACTIVE' }, { status: 400 });
       }
 
       if (legacyQr.expires_at && new Date(legacyQr.expires_at) < new Date()) {
-        return NextResponse.json({ error: 'QR code expirÃ©', code: 'QR_EXPIRED' }, { status: 400 });
+        return NextResponse.json({ error: 'QR code expiré', code: 'QR_EXPIRED' }, { status: 400 });
       }
 
       qrCodeId = legacyQr.id;
@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
 
     if (personError || !person) {
       return NextResponse.json({
-        error: 'Utilisateur non trouvÃ© ou non associÃ© Ã  cet Ã©tablissement',
+        error: 'Utilisateur non trouvé ou non associé à cet établissement',
         code: 'USER_NOT_FOUND',
       }, { status: 404 });
     }
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
     // Check account status
     if (person.user && person.user.status !== 'ACTIVE') {
       return NextResponse.json({
-        error: 'Compte utilisateur dÃ©sactivÃ©',
+        error: 'Compte utilisateur désactivé',
         code: 'ACCOUNT_DISABLED',
       }, { status: 403 });
     }
@@ -264,10 +264,10 @@ export async function POST(req: NextRequest) {
 
       if (qrRecord) {
         if (!qrRecord.is_active) {
-          return NextResponse.json({ error: 'QR code dÃ©sactivÃ©', code: 'QR_INACTIVE' }, { status: 400 });
+          return NextResponse.json({ error: 'QR code désactivé', code: 'QR_INACTIVE' }, { status: 400 });
         }
         if (qrRecord.expires_at && new Date(qrRecord.expires_at) < new Date()) {
-          return NextResponse.json({ error: 'QR code expirÃ©', code: 'QR_EXPIRED' }, { status: 400 });
+          return NextResponse.json({ error: 'QR code expiré', code: 'QR_EXPIRED' }, { status: 400 });
         }
         // Increment scan count
         await supabase
@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
 
       if (existing && existing.length > 0) {
         return NextResponse.json({
-          error: `Doublon dÃ©tectÃ© â€” dernier pointage il y a moins de ${DUPLICATE_WINDOW_SECONDS}s`,
+          error: `Doublon détecté â€” dernier pointage il y a moins de ${DUPLICATE_WINDOW_SECONDS}s`,
           code: 'DUPLICATE',
           last_scan: existing[0],
         }, { status: 409 });
@@ -310,7 +310,7 @@ export async function POST(req: NextRequest) {
 
       if (existing && existing.length > 0) {
         return NextResponse.json({
-          error: `Doublon dÃ©tectÃ© â€” dernier pointage il y a moins de ${DUPLICATE_WINDOW_SECONDS}s`,
+          error: `Doublon détecté â€” dernier pointage il y a moins de ${DUPLICATE_WINDOW_SECONDS}s`,
           code: 'DUPLICATE',
           last_scan: existing[0],
         }, { status: 409 });
@@ -323,11 +323,11 @@ export async function POST(req: NextRequest) {
     // Record attendance
     if (personType === 'student') {
       const status = scan_type === 'LATE' ? 'LATE' : 'PRESENT';
-      const remark = scan_type === 'ARRIVAL' ? `ArrivÃ©e: ${timeStr}`
-        : scan_type === 'DEPARTURE' ? `DÃ©part: ${timeStr}`
+      const remark = scan_type === 'ARRIVAL' ? `Arrivée: ${timeStr}`
+        : scan_type === 'DEPARTURE' ? `Départ: ${timeStr}`
         : scan_type === 'LATE' ? `Retard: ${timeStr}`
         : scan_type === 'PERMISSION' ? `Permission: ${timeStr}`
-        : `PrÃ©sence exceptionnelle: ${timeStr}`;
+        : `Présence exceptionnelle: ${timeStr}`;
 
       const { error: insertErr } = await supabase
         .from('attendance')
@@ -351,12 +351,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
         await supabase.from('attendance_events').insert({
           school_id: schoolId,
@@ -378,17 +378,17 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
           await supabase.from('notifications').insert({
             user_id: person.user.parent_id,
-            title: scan_type === 'ARRIVAL' ? 'ArrivÃ©e de votre enfant' : scan_type === 'DEPARTURE' ? 'DÃ©part de votre enfant' : 'Pointage enfant',
-            body: `${person.user?.name || `${person.first_name} ${person.last_name}`} est ${scan_type === 'ARRIVAL' ? 'arrivÃ©(e)' : scan_type === 'DEPARTURE' ? 'parti(e)' : 'pointÃ©(e)'} Ã  ${timeStr}.`,
+            title: scan_type === 'ARRIVAL' ? 'Arrivée de votre enfant' : scan_type === 'DEPARTURE' ? 'Départ de votre enfant' : 'Pointage enfant',
+            body: `${person.user?.name || `${person.first_name} ${person.last_name}`} est ${scan_type === 'ARRIVAL' ? 'arrivé(e)' : scan_type === 'DEPARTURE' ? 'parti(e)' : 'pointé(e)'} à ${timeStr}.`,
             type: 'ATTENDANCE',
             data: JSON.stringify({ student_id: person.id, scan_type, time: timeStr }),
           });
@@ -401,7 +401,7 @@ export async function POST(req: NextRequest) {
           id: person.id,
           name: person.user?.name || `${person.first_name} ${person.last_name}`,
           photo: person.user?.photo_url || person.photo_url,
-          role: 'Ã‰lÃ¨ve',
+          role: 'Ã‰lève',
           class: person.class?.name,
           level: person.class?.level,
           matricule: person.matricule,
@@ -416,7 +416,7 @@ export async function POST(req: NextRequest) {
           device: device_info,
           operator: operator_name || user?.email,
         },
-        message: `âœ… PrÃ©sence enregistrÃ©e â€” ${person.user?.name || `${person.first_name} ${person.last_name}`}`,
+        message: `âœ… Présence enregistrée â€” ${person.user?.name || `${person.first_name} ${person.last_name}`}`,
       });
     } else if (personType === 'staff') {
       // Staff attendance
@@ -460,7 +460,7 @@ export async function POST(req: NextRequest) {
           device: device_info,
           operator: operator_name || user?.email,
         },
-        message: `âœ… ${checkIn ? 'ArrivÃ©e' : 'DÃ©part'} enregistrÃ© â€” ${person.user?.name || 'Personnel'}`,
+        message: `âœ… ${checkIn ? 'Arrivée' : 'Départ'} enregistré â€” ${person.user?.name || 'Personnel'}`,
       });
     } else {
       // Teacher attendance
@@ -504,7 +504,7 @@ export async function POST(req: NextRequest) {
           device: device_info,
           operator: operator_name || user?.email,
         },
-        message: `âœ… ${checkIn ? 'ArrivÃ©e' : 'DÃ©part'} enregistrÃ© â€” ${person.user?.name || `${person.first_name} ${person.last_name}`}`,
+        message: `âœ… ${checkIn ? 'Arrivée' : 'Départ'} enregistré â€” ${person.user?.name || `${person.first_name} ${person.last_name}`}`,
       });
     }
   } catch (error: any) {

@@ -10,12 +10,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
   const { data: profile } = await supabase
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!['STUDENT', 'PARENT'].includes(profile.role)) {
-    return NextResponse.json({ error: 'Seul un Ã©lÃ¨ve peut soumettre un devoir' }, { status: 403 });
+    return NextResponse.json({ error: 'Seul un élève peut soumettre un devoir' }, { status: 403 });
   }
 
   const body = await req.json();
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (assignment.status === 'CLOSED') {
-    return NextResponse.json({ error: 'Ce devoir est fermÃ©' }, { status: 400 });
+    return NextResponse.json({ error: 'Ce devoir est fermé' }, { status: 400 });
   }
 
   const isLate = assignment.due_date && new Date(assignment.due_date) < new Date();

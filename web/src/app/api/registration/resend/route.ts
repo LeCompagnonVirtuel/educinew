@@ -68,12 +68,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = getSupabaseAdmin();
     const body = await request.json();
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('[resend] Failed to store verification token hash:', updateError);
-      return NextResponse.json({ error: 'Erreur de sauvegarde. RÃ©essayez.' }, { status: 500 });
+      return NextResponse.json({ error: 'Erreur de sauvegarde. Réessayez.' }, { status: 500 });
     }
 
     // Send email
@@ -250,7 +250,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
             <tr><td>
               <h1 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;text-align:center;">Confirmez votre adresse e-mail</h1>
               <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Bonjour <strong>${name}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir crÃ©Ã© un compte EduCI pour <strong>${schoolName}</strong>.</p>
+              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir créé un compte EduCI pour <strong>${schoolName}</strong>.</p>
               <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
             </td></tr>
             <tr><td align="center" style="padding:16px 0 32px;">

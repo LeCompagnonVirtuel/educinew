@@ -51,12 +51,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabaseAdmin = getSupabaseAdmin();
     const { token } = await request.json();
@@ -69,17 +69,17 @@ export async function POST(request: NextRequest) {
     const userRecord = await findUserByToken(supabaseAdmin, token);
 
     if (!userRecord) {
-      return NextResponse.json({ error: 'Lien invalide ou dÃ©jÃ  utilisÃ©.', reason: 'invalid' }, { status: 400 });
+      return NextResponse.json({ error: 'Lien invalide ou déjà utilisé.', reason: 'invalid' }, { status: 400 });
     }
 
     // Check if already verified
     if (userRecord.email_verified) {
-      return NextResponse.json({ error: 'Compte dÃ©jÃ  activÃ©.', reason: 'already_verified' }, { status: 400 });
+      return NextResponse.json({ error: 'Compte déjà activé.', reason: 'already_verified' }, { status: 400 });
     }
 
     // Check expiration
     if (userRecord.verification_expires_at && new Date(userRecord.verification_expires_at) < new Date()) {
-      return NextResponse.json({ error: 'Ce lien a expirÃ©. Demandez un nouveau lien.', reason: 'expired' }, { status: 400 });
+      return NextResponse.json({ error: 'Ce lien a expiré. Demandez un nouveau lien.', reason: 'expired' }, { status: 400 });
     }
 
     const userId = userRecord.id;
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         .from('users')
         .update({ verification_token: null, email_verified: true, email_verified_at: new Date().toISOString() })
         .eq('id', userId);
-      return NextResponse.json({ error: 'Compte dÃ©jÃ  activÃ©.', reason: 'already_verified' }, { status: 400 });
+      return NextResponse.json({ error: 'Compte déjà activé.', reason: 'already_verified' }, { status: 400 });
     }
 
     // === ACTIVATE USER ===
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
             p_admin_id: userId,
             p_admin_name: draftData.admin_name || draft.email || authUser.user_metadata?.name || normalizedEmail,
             p_admin_email: draft.email || normalizedEmail,
-            p_school_name: draft.school_name || 'Mon Ã©tablissement',
+            p_school_name: draft.school_name || 'Mon établissement',
             p_school_type: draftData.school_type || 'SECONDARY',
             p_region: draftData.region || '',
             p_city: draftData.city || '',
@@ -294,12 +294,12 @@ async function createInfrastructure(supabase: any, schoolId: string, _userId: st
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
       await step();
     } catch (err) {

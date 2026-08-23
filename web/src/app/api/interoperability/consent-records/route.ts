@@ -11,16 +11,16 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => request.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     if (!profile?.school_id) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 });
@@ -44,27 +44,27 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => request.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     if (!profile?.school_id) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 });
     if (!['ADMIN', 'SUPER_ADMIN', 'DIRECTEUR'].includes(profile.role)) {
-      return NextResponse.json({ error: 'AccÃ¨s interdit. RÃ´le requis : ADMIN, SUPER_ADMIN ou DIRECTEUR.' }, { status: 403 });
+      return NextResponse.json({ error: 'Accès interdit. Rôle requis : ADMIN, SUPER_ADMIN ou DIRECTEUR.' }, { status: 403 });
     }
 
     const body = await request.json();
     const validation = createConsentRecordSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json({ error: 'DonnÃ©es invalides', details: validation.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const service = new InteroperabilityConsentRecordService(supabase);

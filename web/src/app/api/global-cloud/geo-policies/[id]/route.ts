@@ -9,12 +9,12 @@ import { UpdateGeoPolicySchema } from '@/features/global-cloud/validators/global
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,12 +37,12 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
@@ -81,12 +81,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
             if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
