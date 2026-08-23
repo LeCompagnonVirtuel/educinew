@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { AeipMultiAgentCollaborationService } from '@/features/aeip/services/aeip-multi-agent-collaboration.service';
 import { AgentCollaborationUpdateSchema } from '@/features/aeip/validators/multi-agent-validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

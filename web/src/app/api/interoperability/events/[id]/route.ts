@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { InteroperabilityEventService } from '@/features/gei2p/services/event.service';
 import { updateEventSchema } from '@/features/gei2p/validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,

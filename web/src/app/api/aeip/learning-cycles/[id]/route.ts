@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { AeipLearningCycleService } from '@/features/aeip/services/aeip-learning-cycle.service';
 import { LearningCycleUpdateSchema } from '@/features/aeip/validators/digital-brain-validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

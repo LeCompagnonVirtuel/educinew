@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,16 +10,16 @@ export async function GET(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const url = new URL(req.url);
     const params = Object.fromEntries(url.searchParams.entries());
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Paramètres invalides', details: validation.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: 'ParamÃ¨tres invalides', details: validation.error.flatten() }, { status: 400 });
     }
 
     const { attachmentId } = validation.data;
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (error || !attachment) {
-      return NextResponse.json({ error: 'Pièce jointe non trouvée' }, { status: 404 });
+      return NextResponse.json({ error: 'PiÃ¨ce jointe non trouvÃ©e' }, { status: 404 });
     }
 
     const { data: fileData, error: downloadError } = await supabase.storage

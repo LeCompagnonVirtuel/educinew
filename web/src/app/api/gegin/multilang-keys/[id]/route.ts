@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { UpdateMultilangSchema } from '@/features/gegin/validators/multilang-validators';
 import { createCrudRepository } from '@/features/gegin/repositories/gegin-base.repository';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 const TABLE = 'gegin_multilang_keys';
 

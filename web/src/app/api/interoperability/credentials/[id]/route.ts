@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { InteroperabilityCredentialService } from '@/features/gei2p/services/credential.service';
 import { updateCredentialSchema } from '@/features/gei2p/validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,

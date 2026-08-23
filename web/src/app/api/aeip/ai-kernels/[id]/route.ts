@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { AeipAiOsKernelService } from '@/features/aeip/services/aeip-ai-os-kernel.service';
 import { AIKernelUpdateSchema } from '@/features/aeip/validators/ai-os-validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

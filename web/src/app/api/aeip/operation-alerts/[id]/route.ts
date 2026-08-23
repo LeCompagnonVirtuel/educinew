@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { AeipAutonomousOpsAlertService } from '@/features/aeip/services/aeip-autonomous-ops-alert.service';
 import { OperationAlertUpdateSchema } from '@/features/aeip/validators/autonomous-ops-validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

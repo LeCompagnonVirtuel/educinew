@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = getSupabaseAdmin();
     const body = await request.json();
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data || typeof data !== 'object') {
-      return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
+      return NextResponse.json({ error: 'DonnÃ©es manquantes' }, { status: 400 });
     }
 
     // Verify the session token belongs to an existing draft (prevents guessing)
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       const tokenTimestamp = parseInt(sessionToken.split('_').pop() || '0', 10);
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours
       if (Date.now() - tokenTimestamp > maxAge && tokenTimestamp > 0) {
-        return NextResponse.json({ error: 'Session expirée, veuillez recommencer' }, { status: 403 });
+        return NextResponse.json({ error: 'Session expirÃ©e, veuillez recommencer' }, { status: 403 });
       }
     }
 
@@ -171,12 +171,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
           const raw = existing.completed_steps;
           completedSteps = Array.isArray(raw) ? raw : JSON.parse(raw);
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         console.error('[save-draft] Insert failed:', insertError);
-        return NextResponse.json({ error: 'Erreur lors de la création du brouillon' }, { status: 500 });
+        return NextResponse.json({ error: 'Erreur lors de la crÃ©ation du brouillon' }, { status: 500 });
       }
     }
 

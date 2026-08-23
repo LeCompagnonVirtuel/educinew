@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -36,7 +36,7 @@ function generateSignedToken(payload: Record<string, any>, secret: string, expir
   return `${header}.${payloadB64}.${signature}`;
 }
 
-// POST /api/pointage/qr — generate QR code for a student, teacher, or class
+// POST /api/pointage/qr â€” generate QR code for a student, teacher, or class
 export async function POST(req: NextRequest) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -51,26 +51,26 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!authHeader) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!schoolId) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
 
     const body = await req.json();
     const bodyValidation = qrGenerateSchema.safeParse(body);
     if (!bodyValidation.success) {
-      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'Paramètres invalides' }, { status: 400 });
+      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'ParamÃ¨tres invalides' }, { status: 400 });
     }
     const { type, user_id, student_id, teacher_id, staff_id, class_id, expires_hours } = bodyValidation.data;
     const secret = process.env.QR_SIGNING_SECRET;
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!studentData) {
-        return NextResponse.json({ error: 'Élève non trouvé' }, { status: 404 });
+        return NextResponse.json({ error: 'Ã‰lÃ¨ve non trouvÃ©' }, { status: 404 });
       }
 
       const qrToken = generateSignedToken({
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!teacherData) {
-        return NextResponse.json({ error: 'Enseignant non trouvé' }, { status: 404 });
+        return NextResponse.json({ error: 'Enseignant non trouvÃ©' }, { status: 404 });
       }
 
       const qrToken = generateSignedToken({
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!staffData) {
-        return NextResponse.json({ error: 'Membre du personnel non trouvé' }, { status: 404 });
+        return NextResponse.json({ error: 'Membre du personnel non trouvÃ©' }, { status: 404 });
       }
 
       const qrToken = generateSignedToken({
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (!classData) {
-        return NextResponse.json({ error: 'Classe non trouvée' }, { status: 404 });
+        return NextResponse.json({ error: 'Classe non trouvÃ©e' }, { status: 404 });
       }
 
       // Deactivate old class QRs for this class
@@ -298,14 +298,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ error: 'Paramètres invalides' }, { status: 400 });
+    return NextResponse.json({ error: 'ParamÃ¨tres invalides' }, { status: 400 });
   } catch (error: any) {
     console.error('QR generation error:', error);
     return NextResponse.json({ error: error.message || 'Erreur serveur' }, { status: 500 });
   }
 }
 
-// GET /api/pointage/qr — list active QR codes for the school
+// GET /api/pointage/qr â€” list active QR codes for the school
 export async function GET(req: NextRequest) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -320,21 +320,21 @@ export async function GET(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!authHeader) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!schoolId) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
@@ -362,7 +362,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/pointage/qr — deactivate/revoke QR codes
+// PATCH /api/pointage/qr â€” deactivate/revoke QR codes
 export async function PATCH(req: NextRequest) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -377,26 +377,26 @@ export async function PATCH(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!authHeader) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!schoolId) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
 
     const body = await req.json();
     const bodyValidation = qrDeactivateSchema.safeParse(body);
     if (!bodyValidation.success) {
-      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'Paramètres invalides' }, { status: 400 });
+      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'ParamÃ¨tres invalides' }, { status: 400 });
     }
     const { action, qr_ids, type, all } = bodyValidation.data;
 
@@ -408,7 +408,7 @@ export async function PATCH(req: NextRequest) {
         } else {
           await supabase.from('qr_codes').update({ is_active: false }).eq('school_id', schoolId).eq('is_active', true);
         }
-        return NextResponse.json({ success: true, message: 'Tous les QR codes ont été désactivés' });
+        return NextResponse.json({ success: true, message: 'Tous les QR codes ont Ã©tÃ© dÃ©sactivÃ©s' });
       }
 
       if (!qr_ids || !Array.isArray(qr_ids) || qr_ids.length === 0) {
@@ -418,7 +418,7 @@ export async function PATCH(req: NextRequest) {
       const table = type === 'class' ? 'class_qr_codes' : 'qr_codes';
       await supabase.from(table).update({ is_active: false }).in('id', qr_ids).eq('school_id', schoolId);
 
-      return NextResponse.json({ success: true, message: `${qr_ids.length} QR code(s) désactivé(s)` });
+      return NextResponse.json({ success: true, message: `${qr_ids.length} QR code(s) dÃ©sactivÃ©(s)` });
     }
 
     if (action === 'regenerate') {
@@ -477,7 +477,7 @@ export async function PATCH(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({ success: true, message: `${qr_ids.length} QR code(s) régénéré(s)` });
+      return NextResponse.json({ success: true, message: `${qr_ids.length} QR code(s) rÃ©gÃ©nÃ©rÃ©(s)` });
     }
 
     return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
@@ -486,7 +486,7 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// DELETE /api/pointage/qr — permanently delete QR codes
+// DELETE /api/pointage/qr â€” permanently delete QR codes
 export async function DELETE(req: NextRequest) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -501,21 +501,21 @@ export async function DELETE(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!authHeader) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!schoolId) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -534,7 +534,7 @@ export async function DELETE(req: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: 'QR code supprimé' });
+    return NextResponse.json({ success: true, message: 'QR code supprimÃ©' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

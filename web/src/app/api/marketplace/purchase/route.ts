@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,12 +10,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
 
   const body = await req.json();
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (existingPurchase) {
-    return NextResponse.json({ error: 'Vous avez déjà acheté cet article' }, { status: 409 });
+    return NextResponse.json({ error: 'Vous avez dÃ©jÃ  achetÃ© cet article' }, { status: 409 });
   }
 
   const { data: purchase, error: purchaseErr } = await supabase

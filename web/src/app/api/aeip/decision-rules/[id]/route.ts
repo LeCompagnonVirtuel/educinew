@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { AeipAiDecisionRuleService } from '@/features/aeip/services/aeip-ai-decision-rule.service';
 import { DecisionRuleUpdateSchema } from '@/features/aeip/validators/ai-decision-validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

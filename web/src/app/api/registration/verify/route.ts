@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = getSupabaseAdmin();
     const body = await request.json();
@@ -108,30 +108,30 @@ export async function POST(request: NextRequest) {
           }
           if (!existingDraft.verification_token_hash) {
             return NextResponse.json({
-              error: 'Ce lien a déjà été utilisé. Connectez-vous à votre compte.',
+              error: 'Ce lien a dÃ©jÃ  Ã©tÃ© utilisÃ©. Connectez-vous Ã  votre compte.',
               code: 'TOKEN_CONSUMED',
             }, { status: 400 });
           }
-          // Hash exists but doesn't match — check expiration first
+          // Hash exists but doesn't match â€” check expiration first
           if (existingDraft.verification_expires_at && new Date(existingDraft.verification_expires_at) < new Date()) {
             return NextResponse.json({
-              error: 'Ce lien a expiré. Veuillez en demander un nouveau.',
+              error: 'Ce lien a expirÃ©. Veuillez en demander un nouveau.',
               code: 'EXPIRED',
               email: existingDraft.owner_email,
             }, { status: 400 });
           }
-          // Hash mismatch but not expired — token doesn't match stored hash
+          // Hash mismatch but not expired â€” token doesn't match stored hash
           // Do NOT bypass verification: require user to request a new link
-          console.warn('[verify] Hash mismatch for draft', draftId, '— user must request a new link');
+          console.warn('[verify] Hash mismatch for draft', draftId, 'â€” user must request a new link');
           return NextResponse.json({
-            error: 'Lien invalide. Veuillez demander un nouveau lien de vérification.',
+            error: 'Lien invalide. Veuillez demander un nouveau lien de vÃ©rification.',
             code: 'HASH_MISMATCH',
             email: existingDraft.owner_email,
           }, { status: 400 });
         }
       }
 
-      return NextResponse.json({ error: 'Lien invalide ou expiré.', code: 'INVALID_TOKEN' }, { status: 400 });
+      return NextResponse.json({ error: 'Lien invalide ou expirÃ©.', code: 'INVALID_TOKEN' }, { status: 400 });
     }
 
     const { draft } = result;
@@ -146,12 +146,12 @@ export async function POST(request: NextRequest) {
 
     // Expired
     if (draft.status === 'expired') {
-      return NextResponse.json({ error: 'Ce lien a expiré.', code: 'EXPIRED', email: draft.owner_email }, { status: 400 });
+      return NextResponse.json({ error: 'Ce lien a expirÃ©.', code: 'EXPIRED', email: draft.owner_email }, { status: 400 });
     }
 
     if (draft.verification_expires_at && new Date(draft.verification_expires_at) < new Date()) {
       await supabase.from('registration_drafts_v2').update({ status: 'expired', verification_token_hash: null }).eq('id', draft.id);
-      return NextResponse.json({ error: 'Ce lien a expiré.', code: 'EXPIRED', email: draft.owner_email }, { status: 400 });
+      return NextResponse.json({ error: 'Ce lien a expirÃ©.', code: 'EXPIRED', email: draft.owner_email }, { status: 400 });
     }
 
     // Not pending
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Statut invalide: ${draft.status}`, code: 'INVALID_STATUS' }, { status: 400 });
     }
 
-    // Activate — use the matchedHash that findDraftByToken already confirmed
+    // Activate â€” use the matchedHash that findDraftByToken already confirmed
     const { matchedHash } = result;
     const allTokensToTry = [matchedHash, hashToken(token), token].filter((v, i, a) => a.indexOf(v) === i);
     let activationResult: any = null;
@@ -177,18 +177,18 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // RPC executed successfully — parse the JSONB result
+      // RPC executed successfully â€” parse the JSONB result
       let parsed: any = null;
       try {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
         parsed = typeof rpcResult.data === 'string' ? JSON.parse(rpcResult.data) : rpcResult.data;
       } catch {
@@ -201,10 +201,10 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      // RPC returned {success: false, code: "INVALID_DRAFT"} — hash didn't match inside the function, try next
+      // RPC returned {success: false, code: "INVALID_DRAFT"} â€” hash didn't match inside the function, try next
       if (parsed?.code === 'INVALID_DRAFT') continue;
 
-      // Other RPC-level failure (e.g. TOKEN_EXPIRED, ACTIVATION_FAILED) — don't retry
+      // Other RPC-level failure (e.g. TOKEN_EXPIRED, ACTIVATION_FAILED) â€” don't retry
       activationResult = parsed;
       activationError = null;
       break;
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
     if (activationError) {
       console.error('[verify] Activation RPC error:', JSON.stringify(activationError, null, 2));
       return NextResponse.json({
-        error: "Erreur lors de l'activation. Veuillez réessayer ou contacter le support.",
+        error: "Erreur lors de l'activation. Veuillez rÃ©essayer ou contacter le support.",
         code: 'RPC_ERROR',
         details: activationError.message || String(activationError),
       }, { status: 500 });
@@ -253,12 +253,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
       const { data: linkData } = await supabase.auth.admin.generateLink({
         type: 'magiclink',

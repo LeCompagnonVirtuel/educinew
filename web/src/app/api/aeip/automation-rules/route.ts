@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -11,20 +11,20 @@ export async function GET(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+    if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error('Erreur lors de la liste des règles d\'automatisation:', error);
+    logger.error('Erreur lors de la liste des rÃ¨gles d\'automatisation:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
   }
 }
@@ -47,30 +47,30 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const role = profile?.role;
     const schoolId = profile?.school_id;
 
     if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
     }
-    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+    if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
     const body = await req.json();
     const validation = AutomationRuleCreateSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json({ error: 'Données invalides', details: validation.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: 'DonnÃ©es invalides', details: validation.error.flatten() }, { status: 400 });
     }
 
     const service = new AeipAutonomousOpsRuleService(supabase);
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    logger.error('Erreur lors de la création de la règle d\'automatisation:', error);
+    logger.error('Erreur lors de la crÃ©ation de la rÃ¨gle d\'automatisation:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
   }
 }

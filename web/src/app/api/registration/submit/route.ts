@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -49,9 +49,9 @@ async function sendVerificationEmail(
       body: JSON.stringify({
           from: EMAIL_FROM,
           to: [to],
-          subject: 'Confirmez votre adresse e-mail — EduCI',
+          subject: 'Confirmez votre adresse e-mail â€” EduCI',
           html: buildConfirmationEmail(adminName, schoolName, verificationUrl),
-          text: `Bonjour ${adminName},\n\nMerci d'avoir créé un compte EduCI pour ${schoolName}.\n\nConfirmez votre adresse e-mail en cliquant sur ce lien :\n\n${verificationUrl}\n\nCe lien expire dans ${TOKEN_EXPIRY_HOURS} heures.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.\n\n— EduCI\nhttps://educi.live`,
+          text: `Bonjour ${adminName},\n\nMerci d'avoir crÃ©Ã© un compte EduCI pour ${schoolName}.\n\nConfirmez votre adresse e-mail en cliquant sur ce lien :\n\n${verificationUrl}\n\nCe lien expire dans ${TOKEN_EXPIRY_HOURS} heures.\n\nSi vous n'Ãªtes pas Ã  l'origine de cette demande, ignorez cet e-mail.\n\nâ€” EduCI\nhttps://educi.live`,
         }),
       signal: controller.signal,
     });
@@ -77,12 +77,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = getSupabaseAdmin();
     const body = await request.json();
@@ -104,13 +104,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         error: fetchError?.code === 'PGRST116'
           ? 'Brouillon introuvable. Veuillez recommencer l\'inscription.'
-          : 'Erreur de connexion à la base de données. Réessayez.',
+          : 'Erreur de connexion Ã  la base de donnÃ©es. RÃ©essayez.',
       }, { status: fetchError?.code === 'PGRST116' ? 404 : 500 });
     }
 
     if (draft.status === 'completed') {
       return NextResponse.json({
-        error: 'Ce brouillon a déjà été validé. Connectez-vous à votre compte.',
+        error: 'Ce brouillon a dÃ©jÃ  Ã©tÃ© validÃ©. Connectez-vous Ã  votre compte.',
         code: 'ALREADY_COMPLETED',
       }, { status: 400 });
     }
@@ -120,14 +120,14 @@ export async function POST(request: NextRequest) {
 
     if (draft.status !== 'draft' && !isResend) {
       return NextResponse.json({
-        error: 'Ce brouillon a déjà été soumis',
+        error: 'Ce brouillon a dÃ©jÃ  Ã©tÃ© soumis',
         code: 'ALREADY_SUBMITTED',
       }, { status: 400 });
     }
 
     // Validate required fields
     if (!draft.owner_email || !draft.owner_last_name || !draft.owner_first_name || !draft.school_official_name) {
-      return NextResponse.json({ error: 'Informations incomplètes', code: 'INCOMPLETE' }, { status: 400 });
+      return NextResponse.json({ error: 'Informations incomplÃ¨tes', code: 'INCOMPLETE' }, { status: 400 });
     }
 
     const normalizedEmail = draft.owner_email.toLowerCase().trim();
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Utilisateur introuvable pour ce brouillon', code: 'NO_AUTH_USER' }, { status: 400 });
       }
     } else {
-      // Check if email already exists in auth — search users table first (fast), then auth (fallback)
+      // Check if email already exists in auth â€” search users table first (fast), then auth (fallback)
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (existingUser) {
-        // User exists in users table — use their ID
+        // User exists in users table â€” use their ID
         authUserId = existingUser.id;
       } else {
         // Check auth.users via admin API (paginated search)
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
     if (updateError || !updatedDraft) {
       console.error('[submit] Failed to store verification token hash:', updateError);
       return NextResponse.json({
-        error: 'Erreur lors de la sauvegarde. Veuillez réessayer.',
+        error: 'Erreur lors de la sauvegarde. Veuillez rÃ©essayer.',
         code: 'DRAFT_UPDATE_FAILED',
       }, { status: 500 });
     }
@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
         .eq('session_token', sessionToken);
 
       return NextResponse.json({
-        error: "Impossible d'envoyer l'email de confirmation. Réessayez dans quelques instants.",
+        error: "Impossible d'envoyer l'email de confirmation. RÃ©essayez dans quelques instants.",
         code: 'EMAIL_SEND_FAILED',
       }, { status: 502 });
     }
@@ -306,8 +306,8 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
             <tr><td>
               <h1 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;text-align:center;">Confirmez votre adresse e-mail</h1>
               <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Bonjour <strong>${name}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir créé un compte EduCI pour <strong>${schoolName}</strong>.</p>
-              <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Cliquez sur le bouton ci-dessous pour activer votre compte et votre établissement :</p>
+              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir crÃ©Ã© un compte EduCI pour <strong>${schoolName}</strong>.</p>
+              <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Cliquez sur le bouton ci-dessous pour activer votre compte et votre Ã©tablissement :</p>
             </td></tr>
             <tr><td align="center" style="padding:16px 0 32px;">
               <a href="${verificationUrl}" style="display:inline-block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#FFFFFF;text-decoration:none;font-size:16px;font-weight:700;padding:16px 48px;border-radius:12px;box-shadow:0 4px 14px rgba(79,70,229,0.4);">Confirmer mon adresse e-mail</a>
@@ -333,7 +333,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
         <tr><td style="padding:32px 0 0;text-align:center;">
           <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#6B7280;"><a href="https://educi.live" style="color:#4F46E5;text-decoration:none;">educi.live</a></p>
           <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;">Plateforme intelligente de gestion scolaire</p>
-          <p style="margin:0;font-size:11px;color:#D1D5DB;">© 2025 EduCI</p>
+          <p style="margin:0;font-size:11px;color:#D1D5DB;">Â© 2025 EduCI</p>
         </td></tr>
       </table>
     </td></tr>

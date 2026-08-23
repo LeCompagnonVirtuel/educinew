@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { UpdateIdentitySchema } from '@/features/gegin/validators/identity-validators';
 import { createCrudRepository } from '@/features/gegin/repositories/gegin-base.repository';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 const TABLE = 'gegin_identities';
 

@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -9,25 +9,25 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const role = profile?.role;
     const schoolId = profile?.school_id;
 
     if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
     }
-    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+    if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Le fichier ne doit pas dépasser 10MB' }, { status: 400 });
+      return NextResponse.json({ error: 'Le fichier ne doit pas dÃ©passer 10MB' }, { status: 400 });
     }
 
     const content = await file.text();
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    return NextResponse.json({ imported: data?.length || 0, message: 'Messages importés' });
+    return NextResponse.json({ imported: data?.length || 0, message: 'Messages importÃ©s' });
   } catch (error) {
     logger.error('Error importing messages', error);
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });

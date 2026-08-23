@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -25,7 +25,7 @@ function generateSignedToken(payload: Record<string, any>, secret: string, expir
   return `${header}.${payloadB64}.${signature}`;
 }
 
-// POST /api/pointage/qr/batch — generate QR codes for all students/teachers in a class or school
+// POST /api/pointage/qr/batch â€” generate QR codes for all students/teachers in a class or school
 export async function POST(req: NextRequest) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -40,26 +40,26 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!authHeader) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!schoolId) return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
 
     const body = await req.json();
     const bodyValidation = qrBatchSchema.safeParse(body);
     if (!bodyValidation.success) {
-      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'Paramètres invalides' }, { status: 400 });
+      return NextResponse.json({ error: bodyValidation.error.issues[0]?.message || 'ParamÃ¨tres invalides' }, { status: 400 });
     }
     const { type, class_id, expires_hours } = bodyValidation.data;
     const secret = process.env.QR_SIGNING_SECRET;
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (people.length === 0) {
-      return NextResponse.json({ error: 'Aucun utilisateur trouvé', qr_codes: [] }, { status: 404 });
+      return NextResponse.json({ error: 'Aucun utilisateur trouvÃ©', qr_codes: [] }, { status: 404 });
     }
 
     const qrCodes = [];
@@ -119,12 +119,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
         const personType = type === 'teachers' ? 'teacher' : type === 'staff' ? 'staff' : 'student';
         const name = person.user?.name || `${person.first_name} ${person.last_name}`;

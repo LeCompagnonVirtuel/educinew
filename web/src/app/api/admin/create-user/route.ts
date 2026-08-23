@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
 
@@ -12,36 +12,36 @@ export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
   }
 
   const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
   if (!['ADMIN', 'SUPER_ADMIN'].includes(profile?.role)) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
   }
 
   const body = await req.json();
   const { name, email, password: clientPassword, role: targetRole, phone, classId, subjectId, position, department } = body;
 
-  // Role hierarchy validation — prevent privilege escalation
+  // Role hierarchy validation â€” prevent privilege escalation
   const ROLE_HIERARCHY: Record<string, number> = {
     'STUDENT': 1, 'PARENT': 1, 'CHAUFFEUR': 2,
     'SURVEILLANT': 3, 'SECRETAIRE': 3, 'CENSEUR': 3, 'COMPTABLE': 3,
     'TEACHER': 4, 'ADMIN': 5, 'SUPER_ADMIN': 10,
   };
   if ((ROLE_HIERARCHY[targetRole] || 0) >= (ROLE_HIERARCHY[profile?.role] || 0)) {
-    return NextResponse.json({ error: 'Impossible de créer un utilisateur avec un rôle supérieur ou égal au vôtre' }, { status: 403 });
+    return NextResponse.json({ error: 'Impossible de crÃ©er un utilisateur avec un rÃ´le supÃ©rieur ou Ã©gal au vÃ´tre' }, { status: 403 });
   }
 
   if (!name || !targetRole) {
     return NextResponse.json({ error: 'name et role sont requis' }, { status: 400 });
   }
   if (!VALID_ROLES.includes(targetRole)) {
-    return NextResponse.json({ error: `Rôle invalide: ${targetRole}` }, { status: 400 });
+    return NextResponse.json({ error: `RÃ´le invalide: ${targetRole}` }, { status: 400 });
   }
 
   const schoolId = profile?.school_id;
-  if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+  if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
   // Get school code
   const { data: school } = await supabase.from('schools').select('school_code, city').eq('id', schoolId).single();
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (rpcError) {
-    return NextResponse.json({ error: `Erreur génération: ${rpcError.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Erreur gÃ©nÃ©ration: ${rpcError.message}` }, { status: 500 });
   }
 
   const { identifier, invitation_code, temp_password, activation_token, expires_at } = enterpriseData;
@@ -95,18 +95,18 @@ export async function POST(req: NextRequest) {
 
   if (authError) {
     if (authError.message.includes('already been registered')) {
-      return NextResponse.json({ error: 'Cet email est déjà utilisé' }, { status: 409 });
+      return NextResponse.json({ error: 'Cet email est dÃ©jÃ  utilisÃ©' }, { status: 409 });
     }
     return NextResponse.json({ error: authError.message }, { status: 500 });
   }
 
   if (!authData.user) {
-    return NextResponse.json({ error: 'Échec de la création du compte' }, { status: 500 });
+    return NextResponse.json({ error: 'Ã‰chec de la crÃ©ation du compte' }, { status: 500 });
   }
 
   const newUserId = authData.user.id;
 
-  // Upsert user with enterprise fields (use adminClient to bypass RLS — admin auth already verified)
+  // Upsert user with enterprise fields (use adminClient to bypass RLS â€” admin auth already verified)
   const { error: userError } = await adminClient.from('users').upsert({
     id: newUserId,
     name,
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
     if (studentError) {
       await adminClient.from('users').delete().eq('id', newUserId);
       await adminClient.auth.admin.deleteUser(newUserId);
-      return NextResponse.json({ error: `Erreur élève: ${studentError.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur Ã©lÃ¨ve: ${studentError.message}` }, { status: 500 });
     }
   } else if (targetRole === 'TEACHER') {
     const { error: teacherError } = await adminClient.from('teachers').insert({
@@ -206,12 +206,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const crypto = await import('crypto');
     const qrSecret = process.env.QR_SIGNING_SECRET;
@@ -246,12 +246,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
@@ -271,7 +271,7 @@ export async function POST(req: NextRequest) {
     }
   } catch { /* QR generation is best-effort */ }
 
-  // Return access kit (temp_password only shown once — admin must communicate it securely)
+  // Return access kit (temp_password only shown once â€” admin must communicate it securely)
   return NextResponse.json({
     user: {
       id: newUserId,
@@ -295,7 +295,7 @@ export async function POST(req: NextRequest) {
       qr_url: qrUrl,
       activation_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://educi.live'}/register?token=${activation_token}`,
       expires_at,
-      security_notice: 'Ce mot de passe est temporaire et ne sera plus accessible après cette réponse. Transmettez-le de manière sécurisée.',
+      security_notice: 'Ce mot de passe est temporaire et ne sera plus accessible aprÃ¨s cette rÃ©ponse. Transmettez-le de maniÃ¨re sÃ©curisÃ©e.',
     },
   }, { status: 201 });
 }

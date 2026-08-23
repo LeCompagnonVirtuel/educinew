@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -68,12 +68,12 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = getSupabaseAdmin();
     const body = await request.json();
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     const hashedToken = hashToken(rawToken);
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000).toISOString();
 
-    // Update draft — store HASHED token (consistent with submit route)
+    // Update draft â€” store HASHED token (consistent with submit route)
     const { error: updateError } = await supabase
       .from('registration_drafts_v2')
       .update({
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('[resend] Failed to store verification token hash:', updateError);
-      return NextResponse.json({ error: 'Erreur de sauvegarde. Réessayez.' }, { status: 500 });
+      return NextResponse.json({ error: 'Erreur de sauvegarde. RÃ©essayez.' }, { status: 500 });
     }
 
     // Send email
@@ -193,12 +193,12 @@ export async function POST(request: NextRequest) {
     const verificationUrl = `${siteUrl}/verification?id=${draft.id}&token=${rawToken}`;
     const adminName = `${draft.owner_first_name} ${draft.owner_last_name}`;
 
-    const plainText = `Bonjour ${adminName},\n\nConfirmez votre adresse e-mail EduCI pour ${draft.school_official_name} :\n\n${verificationUrl}\n\nCe lien expire dans ${TOKEN_EXPIRY_HOURS} heures.\n\n— EduCI`;
+    const plainText = `Bonjour ${adminName},\n\nConfirmez votre adresse e-mail EduCI pour ${draft.school_official_name} :\n\n${verificationUrl}\n\nCe lien expire dans ${TOKEN_EXPIRY_HOURS} heures.\n\nâ€” EduCI`;
 
     const emailResult = await sendEmail(
       resendKey,
       draft.owner_email,
-      'Confirmez votre adresse e-mail — EduCI',
+      'Confirmez votre adresse e-mail â€” EduCI',
       buildConfirmationEmail(adminName, draft.school_official_name, verificationUrl),
       plainText
     );
@@ -250,7 +250,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
             <tr><td>
               <h1 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;text-align:center;">Confirmez votre adresse e-mail</h1>
               <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Bonjour <strong>${name}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir créé un compte EduCI pour <strong>${schoolName}</strong>.</p>
+              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Merci d'avoir crÃ©Ã© un compte EduCI pour <strong>${schoolName}</strong>.</p>
               <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#6B7280;text-align:center;">Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
             </td></tr>
             <tr><td align="center" style="padding:16px 0 32px;">
@@ -276,7 +276,7 @@ function buildConfirmationEmail(name: string, schoolName: string, verificationUr
         <tr><td style="padding:32px 0 0;text-align:center;">
           <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#6B7280;"><a href="https://educi.live" style="color:#4F46E5;text-decoration:none;">educi.live</a></p>
           <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;">Plateforme intelligente de gestion scolaire</p>
-          <p style="margin:0;font-size:11px;color:#D1D5DB;">© 2025 EduCI</p>
+          <p style="margin:0;font-size:11px;color:#D1D5DB;">Â© 2025 EduCI</p>
         </td></tr>
       </table>
     </td></tr>

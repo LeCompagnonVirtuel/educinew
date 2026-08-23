@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -18,17 +18,17 @@ export async function GET(request: Request) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      return NextResponse.json({ error: `Erreur récupération Registre de bourses: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur rÃ©cupÃ©ration Registre de bourses: ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -91,17 +91,17 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'DIRECTEUR', 'COMPTABLE'];
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: `Erreur création Registre de bourses: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur crÃ©ation Registre de bourses: ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({ data }, { status: 201 });

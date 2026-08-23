@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { AeipCognitiveProcessService } from '@/features/aeip/services/aeip-cognitive-process.service';
 import { CognitiveProcessUpdateSchema } from '@/features/aeip/validators/digital-brain-validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

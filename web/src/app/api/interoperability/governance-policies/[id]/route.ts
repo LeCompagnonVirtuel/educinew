@@ -4,7 +4,7 @@ import { logger } from '@educi/logger';
 import { InteroperabilityGovernancePolicyService } from '@/features/gei2p/services/governance-policy.service';
 import { updateGovernancePolicySchema } from '@/features/gei2p/validators';
 import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
