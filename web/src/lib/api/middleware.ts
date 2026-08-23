@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/client';
-import { getAuthenticatedSchoolId, getAuthorizedSchoolId } from './secure';
+import { createClient as createServerSupabase } from '@/lib/supabase/server';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -9,7 +8,7 @@ export interface AuthContext {
   userId: string;
   schoolId: string;
   role: string;
-  supabase: ReturnType<typeof createClient>;
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>;
 }
 
 export interface RouteConfig {
@@ -25,8 +24,8 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export async function authenticate(request: NextRequest): Promise<AuthContext> {
-  const supabase = createClient();
+export async function authenticate(_request: NextRequest): Promise<AuthContext> {
+  const supabase = await createServerSupabase();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) throw new Error('Non authentifié');
 
@@ -108,7 +107,7 @@ export function createRoute(config: RouteConfig, handler: RouteHandler) {
           userId: '',
           schoolId: '',
           role: '',
-          supabase: createClient(),
+          supabase: await createServerSupabase(),
         };
       }
 

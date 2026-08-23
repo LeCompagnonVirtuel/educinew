@@ -36,12 +36,22 @@ function createEntry(
   };
 }
 
+const CRITICAL_LEVELS: LogLevel[] = ['error', 'security', 'audit'];
+
 function emit(entry: LogEntry) {
   if (transports.length > 0) {
     transports.forEach((t) => t(entry));
+    return;
+  }
+
+  // Always output critical levels, even in production without transports
+  const prefix = `[${entry.level.toUpperCase()}]`;
+  const ctx = entry.context ? ` (${entry.context})` : '';
+
+  if (CRITICAL_LEVELS.includes(entry.level)) {
+    // eslint-disable-next-line no-console
+    console.error(`${prefix}${ctx} ${entry.message}`, entry.data || '');
   } else if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
-    const prefix = `[${entry.level.toUpperCase()}]`;
-    const ctx = entry.context ? ` (${entry.context})` : '';
     // eslint-disable-next-line no-console
     console.log(`${prefix}${ctx} ${entry.message}`, entry.data || '');
   }

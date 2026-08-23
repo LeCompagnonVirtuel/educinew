@@ -7,13 +7,19 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/register/', '/reset-password
 const STATIC_EXTENSIONS = ['.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.css', '.js', '.woff', '.woff2', '.ttf', '.eot'];
 
 const ROLE_ROUTES: Record<string, string[]> = {
-  SUPER_ADMIN: ['/super-admin', '/admin', '/dashboard'],
-  ADMIN: ['/admin', '/dashboard'],
+  SUPER_ADMIN: ['/superadmin', '/super-admin', '/admin', '/dashboard'],
+  ADMIN: ['/admin', '/dashboard', '/academic', '/analytics', '/announcements', '/payments', '/students', '/transport'],
+  DIRECTEUR: ['/directeur', '/admin', '/dashboard'],
+  COMPTABLE: ['/comptable', '/payments', '/dashboard'],
+  SECRETAIRE: ['/secretaire', '/admin', '/dashboard'],
+  CENSEUR: ['/censeur', '/admin', '/dashboard'],
+  SURVEILLANT: ['/surveillant', '/dashboard'],
   TEACHER: ['/teacher', '/dashboard'],
   STUDENT: ['/student', '/dashboard'],
   PARENT: ['/parent', '/dashboard'],
-  ACCOUNTANT: ['/accountant', '/dashboard'],
-  STAFF: ['/staff', '/dashboard'],
+  CHAUFFEUR: ['/driver', '/dashboard'],
+  BIBLIOTHECAIRE: ['/library', '/dashboard'],
+  INFIRMIER: ['/infirmerie', '/dashboard'],
 };
 
 export function isStaticFile(pathname: string): boolean {

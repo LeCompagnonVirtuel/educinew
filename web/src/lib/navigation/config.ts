@@ -96,10 +96,10 @@ export const navigationConfigs: Record<RoleKey, NavigationConfig> = {
         id: 'plateforme',
         label: 'Plateforme',
         items: [
-          { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord', href: '/super-admin' },
-          { id: 'schools', icon: Building, label: 'Établissements', href: '/super-admin' },
+          { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord', href: '/superadmin' },
+          { id: 'schools', icon: Building, label: 'Établissements', href: '/superadmin' },
           { id: 'users', icon: Users, label: 'Utilisateurs', href: '/users' },
-          { id: 'subscriptions', icon: CreditCard, label: 'Abonnements', href: '/super-admin' },
+          { id: 'subscriptions', icon: CreditCard, label: 'Abonnements', href: '/superadmin' },
         ],
       },
       {
@@ -107,8 +107,8 @@ export const navigationConfigs: Record<RoleKey, NavigationConfig> = {
         label: 'Monitoring',
         items: [
           { id: 'analytics', icon: BarChart3, label: 'Analytics', href: '/analytics' },
-          { id: 'activity', icon: Activity, label: 'Activité', href: '/super-admin' },
-          { id: 'support', icon: Shield, label: 'Support', href: '/super-admin' },
+          { id: 'activity', icon: Activity, label: 'Activité', href: '/superadmin' },
+          { id: 'support', icon: Shield, label: 'Support', href: '/superadmin' },
         ],
       },
       {

@@ -40,21 +40,7 @@ export const ROLE_LABELS: Record<string, string> = {
   INFIRMIER: 'Infirmier',
 };
 
-export const ROLE_REDIRECTS: Record<string, string> = {
-  SUPER_ADMIN: '/superadmin',
-  ADMIN: '/dashboard',
-  DIRECTEUR: '/directeur',
-  COMPTABLE: '/comptable',
-  SECRETAIRE: '/secretaire',
-  CENSEUR: '/censeur',
-  SURVEILLANT: '/surveillant',
-  TEACHER: '/teacher-dashboard',
-  PARENT: '/parent',
-  STUDENT: '/student',
-  CHAUFFEUR: '/driver-dashboard',
-  BIBLIOTHECAIRE: '/library',
-  INFIRMIER: '/infirmerie',
-};
+export const ROLE_REDIRECTS = ROLE_DASHBOARDS;
 
 // ==================== ROLE HIERARCHY ====================
 
@@ -73,6 +59,30 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   PARENT: 20,
   STUDENT: 10,
 };
+
+// ==================== CANONICAL ROLES ====================
+
+export const ALL_ROLES = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'DIRECTEUR',
+  'COMPTABLE',
+  'SECRETAIRE',
+  'CENSEUR',
+  'SURVEILLANT',
+  'TEACHER',
+  'PARENT',
+  'STUDENT',
+  'CHAUFFEUR',
+  'BIBLIOTHECAIRE',
+  'INFIRMIER',
+] as const;
+
+export type Role = (typeof ALL_ROLES)[number];
+
+export function isValidRole(role: string): role is Role {
+  return ALL_ROLES.includes(role as Role);
+}
 
 // ==================== APPLICATION CONSTANTS ====================
 

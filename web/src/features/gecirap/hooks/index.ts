@@ -58,6 +58,10 @@ export {
 } from './use-autoscaling';
 
 export {
+  useDeployments,
+} from './use-deployments';
+
+export {
   useCapacityForecasts,
   useCapacityPlans,
   useResourceUtilization,
