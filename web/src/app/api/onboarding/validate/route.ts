@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import {
   GeneralInfoSchema, AdminInfoSchema, AcademicConfigSchema,
   PedagogicStructureSchema, DirectorSchema, ModulesSchema, BrandingSchema,

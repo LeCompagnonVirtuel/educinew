@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 
 export const GET = withSupabase({ auth: 'none' }, async (_req, ctx) => {
   const { error } = await ctx.supabaseAdmin.from('schools').select('id').limit(1);

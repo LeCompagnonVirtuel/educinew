@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { GeneralInfoSchema, AdminInfoSchema, AcademicConfigSchema, PedagogicStructureSchema, DirectorSchema, ModulesSchema, BrandingSchema, OnboardingDataSchema } from '@/features/onboarding/validators';
 
 export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {

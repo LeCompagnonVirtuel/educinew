@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { ArchiveStudentSchema } from '@/features/students/validators';
 
 export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {

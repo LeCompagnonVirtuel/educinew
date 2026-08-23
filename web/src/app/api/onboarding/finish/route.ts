@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { CompleteOnboardingSchema } from '@/features/onboarding/validators';
 
 export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {

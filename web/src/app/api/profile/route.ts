@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 
 export const GET = withSupabase({ auth: 'user' }, async (_req, ctx) => {
   const userId = ctx.userClaims?.id;

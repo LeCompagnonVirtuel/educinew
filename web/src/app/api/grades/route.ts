@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { gradeSchema, validateRequest } from '@/lib/api/validation';
 
 export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {

@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 
 export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const supabase = ctx.supabase as any;

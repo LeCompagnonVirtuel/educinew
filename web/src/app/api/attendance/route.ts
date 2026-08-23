@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { bulkAttendanceSchema } from '@/lib/api/validation';
 

@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { validateRequest } from '@/lib/api/validation';
 

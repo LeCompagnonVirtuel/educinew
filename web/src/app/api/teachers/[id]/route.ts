@@ -1,4 +1,4 @@
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { UpdateTeacherSchema } from '@/features/teachers/validators';
 
 export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {

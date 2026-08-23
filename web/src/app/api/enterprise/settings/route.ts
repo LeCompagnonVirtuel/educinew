@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withSupabase } from '@supabase/server';
+import { withSupabase } from '@/lib/supabase/server';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { EntSettingService } from '@/features/enterprise/services/ent-settings.service';
