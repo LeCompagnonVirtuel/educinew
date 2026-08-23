@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpCommunityService } from '@/features/lxp/services/lxp-community.service';
 
 const mockSupabase = {
@@ -325,7 +325,7 @@ describe('LxpCommunityService', () => {
 
   describe('Performance Tests', () => {
     it('should handle large datasets efficiently', async () => {
-      mockSupabase.data = Array.from({ length: 1000 }, (_, i) => ({ id: item- }));
+      mockSupabase.data = Array.from({ length: 1000 }, (_, i) => ({ id: `item-${i}` }));
       const result = await service.findAll();
       expect(result).toBeDefined();
     });
@@ -349,7 +349,7 @@ describe('LxpCommunityService', () => {
     });
 
     it('should handle memory pressure', async () => {
-      mockSupabase.data = Array.from({ length: 10000 }, (_, i) => ({ id: item-, data: 'x'.repeat(100) }));
+      mockSupabase.data = Array.from({ length: 10000 }, (_, i) => ({ id: `item-${i}`, data: 'x'.repeat(100) }));
       const result = await service.findAll();
       expect(result).toBeDefined();
     });
@@ -381,7 +381,7 @@ describe('LxpCommunityService', () => {
     });
 
     it('should handle unicode characters', async () => {
-      mockSupabase.data = { id: 'unicode-1', name: '日本語テスト' };
+      mockSupabase.data = { id: 'unicode-1', name: '??????' };
       const result = await service.findById('unicode-1');
       expect(result).toBeDefined();
     });

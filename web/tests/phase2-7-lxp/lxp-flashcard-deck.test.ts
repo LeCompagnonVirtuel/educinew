@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpFlashcardDeckService } from '@/features/lxp/services/lxp-flashcard-deck.service';
 
 const mockSupabase = {

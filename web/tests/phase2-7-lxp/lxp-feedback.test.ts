@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpFeedbackService } from '@/features/lxp/services/lxp-feedback.service';
 
 const mockSupabase = {

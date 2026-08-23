@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpFallbackService } from '@/features/lxp/services/lxp-fallback.service';
 
 const mockSupabase = {

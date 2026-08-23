@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpMicroCredentialService } from '@/features/lxp/services/lxp-micro-credential.service';
 
 const mockSupabase = {

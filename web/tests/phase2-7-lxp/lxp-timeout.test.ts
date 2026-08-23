@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpTimeoutService } from '@/features/lxp/services/lxp-timeout.service';
 
 const mockSupabase = {

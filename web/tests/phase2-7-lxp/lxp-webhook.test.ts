@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpWebhookService } from '@/features/lxp/services/lxp-webhook.service';
 
 const mockSupabase = {

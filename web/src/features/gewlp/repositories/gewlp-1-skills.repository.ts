@@ -7,7 +7,7 @@ import { BaseEntity, CrudRepository, createCrudRepository } from './gewlp-base.r
 
 export interface GewlpSkill extends BaseEntity { name: string; description: string; category: 'technical'|'soft'|'domain'|'meta'; subcategory?: string; level: 'beginner'|'intermediate'|'advanced'|'expert'; taxonomy_ref?: string; tags: string[]; status: 'active'|'deprecated'|'draft'; metadata: Record<string,unknown>; }
 export interface GewlpSkillCategory extends BaseEntity { name: string; description: string; parent_id?: string; icon?: string; color?: string; sort_order: number; status: 'active'|'inactive'; }
-export interface GewlpSkillVersion extends BaseEntity; skill_id: string; version: number; changelog: string; data: Record<string,unknown>; status: 'draft'|'published'|'archived'; published_at?: string; }
+export interface GewlpSkillVersion extends BaseEntity { skill_id: string; version: number; changelog: string; data: Record<string,unknown>; status: 'draft'|'published'|'archived'; published_at?: string; }
 export interface GewlpSkillRelation extends BaseEntity { source_skill_id: string; target_skill_id: string; relation_type: 'prerequisite'|'related'|'conflict'|'builds_on'; strength: number; }
 export interface GewlpSkillAssessment extends BaseEntity { skill_id: string; name: string; description: string; assessment_type: 'quiz'|'practical'|'portfolio'|'peer_review'; max_score: number; passing_score: number; time_limit_minutes?: number; status: 'active'|'draft'|'archived'; }
 export interface GewlpSkillAssessmentResult extends BaseEntity { assessment_id: string; learner_id: string; score: number; passed: boolean; submitted_at: string; graded_at?: string; grader_id?: string; feedback?: string; evidence_urls: string[]; }

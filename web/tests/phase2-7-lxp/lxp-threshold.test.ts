@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LxpThresholdService } from '@/features/lxp/services/lxp-threshold.service';
 
 const mockSupabase = {

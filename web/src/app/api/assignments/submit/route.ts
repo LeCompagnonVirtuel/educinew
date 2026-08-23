@@ -100,4 +100,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json(submission, { status: 201 });
+  } catch (e) {
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
 }
