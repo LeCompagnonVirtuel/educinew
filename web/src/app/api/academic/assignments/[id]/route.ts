@@ -12,6 +12,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('assignments')
     .select('*, teachers(*), subjects(*), classes(*)')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !assignment) return Response.json({ error: 'Affectation introuvable' }, { status: 404 });

@@ -20,6 +20,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('departments')
     .select('*')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !department) return Response.json({ error: 'Département introuvable' }, { status: 404 });

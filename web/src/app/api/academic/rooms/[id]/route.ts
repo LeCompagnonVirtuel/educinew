@@ -24,6 +24,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('rooms')
     .select('*')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !room) return Response.json({ error: 'Salle introuvable' }, { status: 404 });

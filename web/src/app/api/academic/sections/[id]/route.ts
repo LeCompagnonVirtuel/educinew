@@ -21,6 +21,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('sections')
     .select('*')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !section) return Response.json({ error: 'Section introuvable' }, { status: 404 });

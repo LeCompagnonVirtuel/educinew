@@ -11,7 +11,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: student, error } = await supabase
     .from('students')
     .select('id, matricule, first_name, last_name, date_of_birth, gender, photo_url, class:classes(name, level), school:schools(name, logo_url, address, phone)')
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !student) return Response.json({ error: 'Élève introuvable' }, { status: 404 });

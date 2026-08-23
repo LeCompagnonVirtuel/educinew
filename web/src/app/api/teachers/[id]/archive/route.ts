@@ -13,7 +13,7 @@ export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const url = new URL(req.url);
   const id = url.pathname.split('/').filter(Boolean).at(-2);
 
-  const { data: teacher } = await supabase.from('teachers').select('id, school_id').eq('id', id).single();
+  const { data: teacher } = await supabase.from('teachers').select('id, school_id').eq('id', id).eq('school_id', ctx.schoolId).single();
   if (!teacher) return Response.json({ error: 'Enseignant introuvable' }, { status: 404 });
   if (teacher.school_id !== profile?.school_id) {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });

@@ -8,13 +8,13 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const url = new URL(req.url);
   const id = url.pathname.split('/').filter(Boolean).at(-2);
 
-  const { data: teacher } = await supabase.from('teachers').select('id').eq('id', id).single();
+  const { data: teacher } = await supabase.from('teachers').select('id').eq('id', id).eq('school_id', ctx.schoolId).single();
   if (!teacher) return Response.json({ error: 'Enseignant introuvable' }, { status: 404 });
 
   const { data: schedule, error } = await supabase
     .from('teacher_schedules')
     .select('*')
-    .eq('teacher_id', id)
+    .eq('teacher_id', id).eq('school_id', ctx.schoolId)
     .eq('is_active', true)
     .order('day_of_week');
 

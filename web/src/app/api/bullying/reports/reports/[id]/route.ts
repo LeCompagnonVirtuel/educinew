@@ -19,7 +19,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: record, error } = await supabase
     .from('reports')
     .select('*, student:students(id, first_name, last_name, matricule)')
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !record) return Response.json({ error: 'Signalement introuvable' }, { status: 404 });
@@ -67,7 +67,7 @@ export const PUT = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: record, error } = await supabase
     .from('reports')
     .update(updateData)
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .select()
     .single();
 
@@ -88,7 +88,7 @@ export const DELETE = withSupabase({ auth: 'user' }, async (req, ctx) => {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
-  const { error } = await supabase.from('reports').delete().eq('id', id);
+  const { error } = await supabase.from('reports').delete().eq('id', id).eq('school_id', ctx.schoolId);
 
   if (error) return Response.json({ error: error.message }, { status: 400 });
 

@@ -26,6 +26,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('classes')
     .select('*')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !cls) return Response.json({ error: 'Classe introuvable' }, { status: 404 });

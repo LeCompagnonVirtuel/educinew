@@ -20,8 +20,9 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: terms, error } = await supabase
     .from('academic_terms')
     .select('*')
-    .eq('academic_year_id', yearId)
-    .order('order', { ascending: true });
+    .eq('academic_year_id',     )
+order.eq('school_id', ctx.schoolId)
+order.$4('order', { ascending: true });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 

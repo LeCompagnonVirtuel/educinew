@@ -21,6 +21,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('streams')
     .select('*')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !stream) return Response.json({ error: 'Filière introuvable' }, { status: 404 });

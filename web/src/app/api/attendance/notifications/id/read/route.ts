@@ -13,7 +13,7 @@ export const POST = withSupabase({ auth: 'user' }, async (req, { params }) => {
       is_read: true,
       read_at: new Date().toISOString(),
     })
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .eq('user_id', user.id)
     .select()
     .single();

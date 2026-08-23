@@ -12,6 +12,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('timetable')
     .select('*, classes(name), subjects(name), teachers(first_name, last_name), rooms(name)')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !entry) return Response.json({ error: 'Entrée introuvable' }, { status: 404 });

@@ -9,13 +9,13 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const id = url.pathname.split('/').filter(Boolean).at(-2);
   const limit = parseInt(url.searchParams.get('limit') || '50');
 
-  const { data: teacher } = await supabase.from('teachers').select('id').eq('id', id).single();
+  const { data: teacher } = await supabase.from('teachers').select('id').eq('id', id).eq('school_id', ctx.schoolId).single();
   if (!teacher) return Response.json({ error: 'Enseignant introuvable' }, { status: 404 });
 
   const { data: events, error } = await supabase
     .from('teacher_timeline')
     .select('*')
-    .eq('teacher_id', id)
+    .eq('teacher_id', id).eq('school_id', ctx.schoolId)
     .order('created_at', { ascending: false })
     .limit(limit);
 

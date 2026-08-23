@@ -13,6 +13,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('students')
     .select('id, matricule, first_name, last_name, school_id, schools(name)')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !student) return Response.json({ error: 'Élève introuvable' }, { status: 404 });

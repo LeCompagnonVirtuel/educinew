@@ -9,7 +9,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const { data: school, error } = await supabase.from('schools').select('*').eq('id', id).single();
+  const { data: school, error } = await supabase.from('schools').select('*').eq('id', id).eq('school_id', ctx.schoolId).single();
 
   if (error || !school) {
     return Response.json({ error: 'Établissement introuvable' }, { status: 404 });

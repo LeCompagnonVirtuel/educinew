@@ -18,7 +18,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: level, error } = await supabase
     .from('levels')
     .select('*')
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !level) return Response.json({ error: 'Niveau introuvable' }, { status: 404 });
@@ -65,7 +65,7 @@ export const PATCH = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: level, error } = await supabase
     .from('levels')
     .update(updateData)
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .select()
     .single();
 
@@ -87,7 +87,7 @@ export const DELETE = withSupabase({ auth: 'user' }, async (req, ctx) => {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
-  const { error } = await supabase.from('levels').delete().eq('id', id);
+  const { error } = await supabase.from('levels').delete().eq('id', id).eq('school_id', ctx.schoolId);
 
   if (error) return Response.json({ error: error.message }, { status: 400 });
 

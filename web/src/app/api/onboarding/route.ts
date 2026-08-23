@@ -80,14 +80,12 @@ export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {
 
   const { data: draft, error } = await supabase
     .from('onboarding_drafts')
-    .insert({
-      user_id: user.id,
+    .insert({user_id: user.id,
       status: 'IN_PROGRESS',
       data: defaultData,
       progress,
       created_at: now,
-      updated_at: now,
-    })
+      updated_at: now, school_id: ctx.schoolId})
     .select()
     .single();
 

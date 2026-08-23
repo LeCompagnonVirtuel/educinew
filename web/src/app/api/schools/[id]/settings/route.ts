@@ -12,7 +12,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: settings, error } = await supabase
     .from('schools')
     .select('language, timezone, currency, grading_system, passing_grade, academic_year, checkin_radius')
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !settings) {
@@ -67,7 +67,7 @@ export const PATCH = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { error } = await supabase
     .from('schools')
     .update(updateData)
-    .eq('id', id);
+    .eq('id', id).eq('school_id', ctx.schoolId);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 400 });

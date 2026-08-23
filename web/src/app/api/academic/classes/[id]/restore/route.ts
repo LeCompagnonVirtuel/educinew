@@ -13,7 +13,7 @@ export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const url = new URL(req.url);
   const id = url.pathname.split('/').filter(Boolean).at(-2);
 
-  const { data: cls } = await supabase.from('classes').select('id, school_id').eq('id', id).single();
+  const { data: cls } = await supabase.from('classes').select('id, school_id').eq('id', id).eq('school_id', ctx.schoolId).single();
   if (!cls) return Response.json({ error: 'Classe introuvable' }, { status: 404 });
   if (cls.school_id !== profile?.school_id) {
     return Response.json({ error: 'Non autorisé' }, { status: 403 });

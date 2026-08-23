@@ -24,6 +24,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
     .from('subjects')
     .select('*')
     .eq('id', id)
+    .eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !subject) return Response.json({ error: 'Matière introuvable' }, { status: 404 });

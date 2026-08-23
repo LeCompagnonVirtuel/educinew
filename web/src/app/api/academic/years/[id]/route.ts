@@ -19,7 +19,7 @@ export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: year, error } = await supabase
     .from('academic_years')
     .select('*')
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .single();
 
   if (error || !year) return Response.json({ error: 'Année introuvable' }, { status: 404 });
@@ -67,7 +67,7 @@ export const PATCH = withSupabase({ auth: 'user' }, async (req, ctx) => {
   const { data: year, error } = await supabase
     .from('academic_years')
     .update(updateData)
-    .eq('id', id)
+    .eq('id', id).eq('school_id', ctx.schoolId)
     .select()
     .single();
 
