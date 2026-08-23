@@ -1,4 +1,4 @@
-﻿import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/ssr';
@@ -8,12 +8,10 @@ import { UpdateSecretRotationSchema } from '@/features/global-cloud/validators/g
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
+            if (!authCookie) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
@@ -38,12 +36,10 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
+            if (!authCookie) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
@@ -84,12 +80,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
+            if (!authCookie) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });

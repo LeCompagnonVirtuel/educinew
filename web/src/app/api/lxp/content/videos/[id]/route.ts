@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { LxpVideoService } from '@/features/lxp/services';
 
 export async function GET(
@@ -8,12 +8,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+                const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -36,12 +31,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+                const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -65,12 +55,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+                const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });

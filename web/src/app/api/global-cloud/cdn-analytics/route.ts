@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/ssr';
 import { logger } from '@educi/logger';
@@ -8,12 +8,7 @@ import { CreateCDNAnalyticsSchema } from '@/features/global-cloud/validators/glo
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+                const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -41,12 +36,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+                const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });

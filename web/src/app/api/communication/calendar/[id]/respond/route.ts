@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCommunicationRepository } from '@/features/communication/repositories/communication.repository';
 import { createCalendarService } from '@/features/communication/services/calendar.service';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
     // --- Auth check ---
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
-    if (!authCookie) {
+            if (!authCookie) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
-    const authSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const authSupabase = await createClient();
     const { data: { user }, error: authError } = await authSupabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
