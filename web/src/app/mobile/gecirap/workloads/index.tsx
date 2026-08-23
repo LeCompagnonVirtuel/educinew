@@ -13,13 +13,6 @@ interface WorkloadSummary {
   image: string;
 }
 
-const FALLBACK_WORKLOADS: WorkloadSummary[] = [
-  { id: '1', name: 'api-gateway', workload_type: 'deployment', replicas_desired: 3, replicas_ready: 3, status: 'running', image: 'api-gateway:2.1.0' },
-  { id: '2', name: 'auth-service', workload_type: 'deployment', replicas_desired: 2, replicas_ready: 2, status: 'running', image: 'auth-service:1.4.2' },
-  { id: '3', name: 'worker-queue', workload_type: 'statefulset', replicas_desired: 4, replicas_ready: 3, status: 'degraded', image: 'worker:3.0.1' },
-  { id: '4', name: 'cache-proxy', workload_type: 'daemonset', replicas_desired: 6, replicas_ready: 6, status: 'running', image: 'cache-proxy:1.2.0' },
-];
-
 function getStatusDot(status: string): string {
   switch (status) {
     case 'running': return 'bg-green-500';
@@ -44,7 +37,7 @@ function getTypeColor(type: string): string {
 export default function WorkloadsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, error, refetch } = useWorkloads('current-school');
-  const workloads = data?.data ?? FALLBACK_WORKLOADS;
+  const workloads = data?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -77,6 +70,26 @@ export default function WorkloadsPage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load workloads</p>
           <p className="text-sm text-gray-500 mb-4">{error.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (workloads.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Workloads</h1>
+            <p className="text-sm text-gray-500">0 healthy / 0 total</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No workloads found</p>
+          <p className="text-gray-400 text-xs mt-1">Deploy an application to get started</p>
         </div>
       </div>
     );

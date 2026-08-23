@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useExperiments, useDatasets } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface Experiment {
   id: string;
@@ -12,13 +11,6 @@ interface Experiment {
   confidence: number;
   dataset_size: number;
 }
-
-const FALLBACK_EXPERIMENTS: Experiment[] = [
-  { id: '1', name: 'Digital Learning Impact Study', hypothesis: 'Tablet-based learning improves math scores by 15%', status: 'running', progress: 0.62, confidence: 0.84, dataset_size: 1250 },
-  { id: '2', name: 'Class Size Effect Analysis', hypothesis: 'Smaller classes below 25 students improve outcomes', status: 'running', progress: 0.38, confidence: 0.71, dataset_size: 3400 },
-  { id: '3', name: 'Teacher Training ROI', hypothesis: 'Monthly PD sessions improve student pass rates', status: 'completed', progress: 1.0, confidence: 0.92, dataset_size: 890 },
-  { id: '4', name: 'Parent Engagement Effect', hypothesis: 'Regular parent-teacher meetings reduce dropout rates', status: 'draft', progress: 0.0, confidence: 0.0, dataset_size: 0 },
-];
 
 function getStatusColor(status: string): string {
   switch (status) {
@@ -48,22 +40,35 @@ function getConfidenceColor(confidence: number): string {
 
 export default function ExperimentsPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const experimentsQuery = useExperiments('current-school');
-  const datasetsQuery = useDatasets('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [totalDatasets, setTotalDatasets] = useState(0);
 
-  const isLoading = experimentsQuery.isLoading || datasetsQuery.isLoading;
-  const hasError = experimentsQuery.error || datasetsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/experiments');
+      if (!res.ok) throw new Error('Failed to load experiments');
+      const json = await res.json();
+      setExperiments(json.data ?? []);
+      setTotalDatasets(json.datasets ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const experiments = experimentsQuery.data?.data ?? FALLBACK_EXPERIMENTS;
-  const totalDatasets = datasetsQuery.data?.total ?? 15;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([experimentsQuery.refetch(), datasetsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [experimentsQuery, datasetsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -78,13 +83,25 @@ export default function ExperimentsPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load experiments</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching research lab data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (experiments.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No experiments found</p>
+          <p className="text-sm text-gray-500 mb-4">No research experiments are available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

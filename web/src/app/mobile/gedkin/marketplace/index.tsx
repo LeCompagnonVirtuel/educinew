@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useMarketplaceProducts, useSubscriptions, useProductReviews } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface MarketplaceProduct {
   id: string;
@@ -13,14 +12,6 @@ interface MarketplaceProduct {
   subscribers: number;
   status: string;
 }
-
-const FALLBACK_PRODUCTS: MarketplaceProduct[] = [
-  { id: '1', name: 'Student Analytics Suite', provider: 'EduMetrics', category: 'Analytics', price_per_month: 49, rating: 4.7, subscribers: 128, status: 'active' },
-  { id: '2', name: 'Smart Attendance AI', provider: 'AttendanceIQ', category: 'Automation', price_per_month: 29, rating: 4.5, subscribers: 256, status: 'active' },
-  { id: '3', name: 'Fee Management Pro', provider: 'FinEdu', category: 'Financial', price_per_month: 39, rating: 4.3, subscribers: 89, status: 'active' },
-  { id: '4', name: 'Teacher Performance Hub', provider: 'TeachInsight', category: 'HR', price_per_month: 59, rating: 4.8, subscribers: 67, status: 'active' },
-  { id: '5', name: 'Parent Communication Portal', provider: 'ConnectEdu', category: 'Communication', price_per_month: 19, rating: 4.1, subscribers: 342, status: 'active' },
-];
 
 function getCategoryColor(category: string): string {
   switch (category) {
@@ -35,24 +26,37 @@ function getCategoryColor(category: string): string {
 
 export default function MarketplacePage() {
   const [refreshing, setRefreshing] = useState(false);
-  const productsQuery = useMarketplaceProducts('current-school');
-  const subscriptionsQuery = useSubscriptions('current-school');
-  const reviewsQuery = useProductReviews('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<MarketplaceProduct[]>([]);
+  const [totalSubscriptions, setTotalSubscriptions] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
 
-  const isLoading = productsQuery.isLoading || subscriptionsQuery.isLoading || reviewsQuery.isLoading;
-  const hasError = productsQuery.error || subscriptionsQuery.error || reviewsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/marketplace');
+      if (!res.ok) throw new Error('Failed to load marketplace');
+      const json = await res.json();
+      setProducts(json.data ?? []);
+      setTotalSubscriptions(json.subscriptions ?? 0);
+      setTotalReviews(json.reviews ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const products = productsQuery.data?.data ?? FALLBACK_PRODUCTS;
-  const totalSubscriptions = subscriptionsQuery.data?.total ?? 12;
-  const totalReviews = reviewsQuery.data?.total ?? 45;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([productsQuery.refetch(), subscriptionsQuery.refetch(), reviewsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [productsQuery, subscriptionsQuery, reviewsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -67,13 +71,25 @@ export default function MarketplacePage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load marketplace</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching marketplace data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No products found</p>
+          <p className="text-sm text-gray-500 mb-4">No marketplace products are available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

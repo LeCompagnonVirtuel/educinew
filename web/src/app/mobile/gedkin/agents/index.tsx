@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useAIAgents, useAgentTasks } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface AIAgent {
   id: string;
@@ -12,15 +11,6 @@ interface AIAgent {
   tasks_completed: number;
   last_active: string;
 }
-
-const FALLBACK_AGENTS: AIAgent[] = [
-  { id: '1', name: 'Data Quality Monitor', agent_type: 'MONITOR', status: 'active', success_rate: 0.97, tasks_completed: 1240, last_active: '2026-08-09T10:30:00Z' },
-  { id: '2', name: 'Enrollment Predictor', agent_type: 'PREDICTOR', status: 'active', success_rate: 0.89, tasks_completed: 356, last_active: '2026-08-09T09:15:00Z' },
-  { id: '3', name: 'Fee Collection Optimizer', agent_type: 'OPTIMIZER', status: 'active', success_rate: 0.92, tasks_completed: 890, last_active: '2026-08-09T08:45:00Z' },
-  { id: '4', name: 'Attendance Anomaly Detector', agent_type: 'DETECTOR', status: 'idle', success_rate: 0.85, tasks_completed: 567, last_active: '2026-08-08T22:00:00Z' },
-  { id: '5', name: 'Report Generator', agent_type: 'GENERATOR', status: 'active', success_rate: 0.94, tasks_completed: 2100, last_active: '2026-08-09T10:00:00Z' },
-  { id: '6', name: 'Policy Compliance Checker', agent_type: 'CHECKER', status: 'active', success_rate: 0.91, tasks_completed: 445, last_active: '2026-08-09T07:30:00Z' },
-];
 
 function getAgentTypeColor(type: string): string {
   switch (type) {
@@ -51,22 +41,35 @@ function getSuccessColor(rate: number): string {
 
 export default function AgentsPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const agentsQuery = useAIAgents('current-school');
-  const tasksQuery = useAgentTasks('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [totalTasks, setTotalTasks] = useState(0);
 
-  const isLoading = agentsQuery.isLoading || tasksQuery.isLoading;
-  const hasError = agentsQuery.error || tasksQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/agents');
+      if (!res.ok) throw new Error('Failed to load agents');
+      const json = await res.json();
+      setAgents(json.data ?? []);
+      setTotalTasks(json.total ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const agents = agentsQuery.data?.data ?? FALLBACK_AGENTS;
-  const totalTasks = tasksQuery.data?.total ?? 5598;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([agentsQuery.refetch(), tasksQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [agentsQuery, tasksQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -81,13 +84,25 @@ export default function AgentsPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load agents</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching agent data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (agents.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No agents found</p>
+          <p className="text-sm text-gray-500 mb-4">No AI agent data is available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

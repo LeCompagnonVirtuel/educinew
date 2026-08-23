@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useResearchProjects, usePublications, useResearcherProfiles } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface ResearchProject {
   id: string;
@@ -11,13 +10,6 @@ interface ResearchProject {
   researchers_count: number;
   start_date: string;
 }
-
-const FALLBACK_PROJECTS: ResearchProject[] = [
-  { id: '1', title: 'Impact of Digital Learning on Student Outcomes', status: 'active', progress: 0.65, researchers_count: 5, start_date: '2025-09-01' },
-  { id: '2', title: 'Teacher Retention in Rural Schools', status: 'active', progress: 0.42, researchers_count: 3, start_date: '2025-11-15' },
-  { id: '3', title: 'Gender Parity in STEM Education', status: 'completed', progress: 1.0, researchers_count: 4, start_date: '2025-03-01' },
-  { id: '4', title: 'Parental Engagement and Academic Performance', status: 'active', progress: 0.28, researchers_count: 2, start_date: '2026-01-10' },
-];
 
 function getStatusColor(status: string): string {
   switch (status) {
@@ -37,24 +29,37 @@ function getProgressColor(progress: number): string {
 
 export default function ResearchPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const projectsQuery = useResearchProjects('current-school');
-  const publicationsQuery = usePublications('current-school');
-  const profilesQuery = useResearcherProfiles('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [projects, setProjects] = useState<ResearchProject[]>([]);
+  const [totalPublications, setTotalPublications] = useState(0);
+  const [totalResearchers, setTotalResearchers] = useState(0);
 
-  const isLoading = projectsQuery.isLoading || publicationsQuery.isLoading || profilesQuery.isLoading;
-  const hasError = projectsQuery.error || publicationsQuery.error || profilesQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/research');
+      if (!res.ok) throw new Error('Failed to load research data');
+      const json = await res.json();
+      setProjects(json.data ?? []);
+      setTotalPublications(json.publications ?? 0);
+      setTotalResearchers(json.researchers ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const projects = projectsQuery.data?.data ?? FALLBACK_PROJECTS;
-  const totalPublications = publicationsQuery.data?.total ?? 12;
-  const totalResearchers = profilesQuery.data?.total ?? 8;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([projectsQuery.refetch(), publicationsQuery.refetch(), profilesQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [projectsQuery, publicationsQuery, profilesQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -69,13 +74,25 @@ export default function ResearchPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load research data</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching research intelligence</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No research projects</p>
+          <p className="text-sm text-gray-500 mb-4">No research intelligence data is available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

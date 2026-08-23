@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useForecasts, useForecastModels, useDriftDetections } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface Forecast {
   id: string;
@@ -11,14 +10,6 @@ interface Forecast {
   target_date: string;
   status: string;
 }
-
-const FALLBACK_FORECASTS: Forecast[] = [
-  { id: '1', name: 'Enrollment Growth Q3 2026', type: 'ENROLLMENT', confidence: 0.89, target_date: '2026-09-30', status: 'active' },
-  { id: '2', name: 'Fee Default Risk', type: 'FINANCIAL', confidence: 0.82, target_date: '2026-08-31', status: 'active' },
-  { id: '3', name: 'Teacher Demand 2027', type: 'STAFFING', confidence: 0.76, target_date: '2027-01-01', status: 'draft' },
-  { id: '4', name: 'Infrastructure Capacity', type: 'CAPACITY', confidence: 0.91, target_date: '2026-12-31', status: 'active' },
-  { id: '5', name: 'Exam Performance Trend', type: 'ACADEMIC', confidence: 0.85, target_date: '2026-12-31', status: 'active' },
-];
 
 function getTypeColor(type: string): string {
   switch (type) {
@@ -48,24 +39,37 @@ function getStatusDot(status: string): string {
 
 export default function ForecastingPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const forecastsQuery = useForecasts('current-school');
-  const modelsQuery = useForecastModels('current-school');
-  const driftQuery = useDriftDetections('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [forecasts, setForecasts] = useState<Forecast[]>([]);
+  const [totalModels, setTotalModels] = useState(0);
+  const [totalDrifts, setTotalDrifts] = useState(0);
 
-  const isLoading = forecastsQuery.isLoading || modelsQuery.isLoading || driftQuery.isLoading;
-  const hasError = forecastsQuery.error || modelsQuery.error || driftQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/forecasting');
+      if (!res.ok) throw new Error('Failed to load forecasts');
+      const json = await res.json();
+      setForecasts(json.data ?? []);
+      setTotalModels(json.models ?? 0);
+      setTotalDrifts(json.drifts ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const forecasts = forecastsQuery.data?.data ?? FALLBACK_FORECASTS;
-  const totalModels = modelsQuery.data?.total ?? 6;
-  const totalDrifts = driftQuery.data?.total ?? 2;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([forecastsQuery.refetch(), modelsQuery.refetch(), driftQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [forecastsQuery, modelsQuery, driftQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -80,13 +84,25 @@ export default function ForecastingPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load forecasts</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching forecasting data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (forecasts.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No forecasts found</p>
+          <p className="text-sm text-gray-500 mb-4">No forecasting data is available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

@@ -7,22 +7,6 @@ interface NetworkSummary { id: string; name: string; network_type: string; cidr_
 interface LoadBalancerSummary { id: string; name: string; lb_type: string; scheme: string; status: string; ip_address?: string; }
 interface DNSSummary { id: string; domain_name: string; record_type: string; record_name: string; is_active: boolean; }
 
-const FALLBACK_NETWORKS: NetworkSummary[] = [
-  { id: '1', name: 'prod-vpc', network_type: 'vpc', cidr_block: '10.0.0.0/16', region_code: 'us-east-1', is_active: true },
-  { id: '2', name: 'staging-vpc', network_type: 'vpc', cidr_block: '10.1.0.0/16', region_code: 'eu-west1', is_active: true },
-  { id: '3', name: 'edge-subnet', network_type: 'subnet', cidr_block: '10.0.1.0/24', region_code: 'af-west1', is_active: true },
-];
-
-const FALLBACK_LB: LoadBalancerSummary[] = [
-  { id: '1', name: 'api-lb', lb_type: 'application', scheme: 'internet-facing', status: 'active', ip_address: '52.10.0.1' },
-  { id: '2', name: 'internal-lb', lb_type: 'network', scheme: 'internal', status: 'active', ip_address: '10.0.0.50' },
-];
-
-const FALLBACK_DNS: DNSSummary[] = [
-  { id: '1', domain_name: 'edu-ci.com', record_type: 'A', record_name: 'api', is_active: true },
-  { id: '2', domain_name: 'edu-ci.com', record_type: 'CNAME', record_name: 'cdn', is_active: true },
-];
-
 function getStatusDot(status: string): string {
   switch (status) {
     case 'active': return 'bg-green-500';
@@ -48,9 +32,9 @@ export default function NetworkPage() {
   const { data: lbData, isLoading: lbLoading, refetch: refetchLB } = useLoadBalancers('current-school');
   const { data: dnsData, isLoading: dnsLoading, refetch: refetchDNS } = useDNSRecords('current-school');
 
-  const networks = netData?.data ?? FALLBACK_NETWORKS;
-  const loadBalancers = lbData?.data ?? FALLBACK_LB;
-  const dnsRecords = dnsData?.data ?? FALLBACK_DNS;
+  const networks = netData?.data ?? [];
+  const loadBalancers = lbData?.data ?? [];
+  const dnsRecords = dnsData?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -81,6 +65,26 @@ export default function NetworkPage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load network data</p>
           <p className="text-sm text-gray-500 mb-4">{netsError.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (networks.length === 0 && loadBalancers.length === 0 && dnsRecords.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Network</h1>
+            <p className="text-sm text-gray-500">0 active networks</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No network data available</p>
+          <p className="text-gray-400 text-xs mt-1">Configure networks to get started</p>
         </div>
       </div>
     );

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useDataDomains, useDataProducts, useDataSource, useDataContract } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface DomainSummary {
   id: string;
@@ -11,14 +10,6 @@ interface DomainSummary {
   quality_score: number;
   status: string;
 }
-
-const FALLBACK_DOMAINS: DomainSummary[] = [
-  { id: '1', name: 'Student Performance', description: 'Academic results and progress tracking', product_count: 8, quality_score: 0.92, status: 'active' },
-  { id: '2', name: 'Financial Operations', description: 'Fee collection and accounting data', product_count: 5, quality_score: 0.88, status: 'active' },
-  { id: '3', name: 'Human Resources', description: 'Staff and teacher management', product_count: 4, quality_score: 0.85, status: 'active' },
-  { id: '4', name: 'Infrastructure', description: 'Facilities and transport data', product_count: 3, quality_score: 0.78, status: 'review' },
-  { id: '5', name: 'Health & Wellness', description: 'Student health and nutrition records', product_count: 3, quality_score: 0.91, status: 'active' },
-];
 
 function getQualityColor(score: number): string {
   if (score >= 0.9) return 'text-green-600';
@@ -34,26 +25,39 @@ function getQualityBg(score: number): string {
 
 export default function DataFabricPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const domains = useDataDomains('current-school');
-  const products = useDataProducts('current-school');
-  const sources = useDataSource('current-school');
-  const contracts = useDataContract('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [domainList, setDomainList] = useState<DomainSummary[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalSources, setTotalSources] = useState(0);
+  const [totalContracts, setTotalContracts] = useState(0);
 
-  const isLoading = domains.isLoading || products.isLoading || sources.isLoading || contracts.isLoading;
-  const hasError = domains.error || products.error || sources.error || contracts.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/data-fabric');
+      if (!res.ok) throw new Error('Failed to load data fabric');
+      const json = await res.json();
+      setDomainList(json.data ?? []);
+      setTotalProducts(json.products ?? 0);
+      setTotalSources(json.sources ?? 0);
+      setTotalContracts(json.contracts ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const domainList = domains.data?.data ?? FALLBACK_DOMAINS;
-  const totalProducts = products.data?.total ?? 23;
-  const totalSources = sources.data?.total ?? 15;
-  const totalContracts = contracts.data?.total ?? 8;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([domains.refetch(), products.refetch(), sources.refetch(), contracts.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [domains, products, sources, contracts]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -68,13 +72,25 @@ export default function DataFabricPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load data fabric</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching domains</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (domainList.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No domains found</p>
+          <p className="text-sm text-gray-500 mb-4">No data fabric domains are available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

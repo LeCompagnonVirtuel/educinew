@@ -13,12 +13,6 @@ interface ClusterSummary {
   node_count: number;
 }
 
-const FALLBACK_CLUSTERS: ClusterSummary[] = [
-  { id: '1', name: 'prod-cluster-1', provider: 'aws', region_code: 'us-east-1', kubernetes_version: '1.28.4', status: 'active', node_count: 6 },
-  { id: '2', name: 'staging-cluster', provider: 'gcp', region_code: 'eu-west1', kubernetes_version: '1.28.2', status: 'active', node_count: 3 },
-  { id: '3', name: 'dev-cluster', provider: 'aws', region_code: 'us-west-2', kubernetes_version: '1.27.8', status: 'degraded', node_count: 2 },
-];
-
 function getStatusDot(status: string): string {
   switch (status) {
     case 'active': return 'bg-green-500';
@@ -42,7 +36,7 @@ function getStatusColor(status: string): string {
 export default function ClustersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, error, refetch } = useClusters('current-school');
-  const clusters = data?.data ?? FALLBACK_CLUSTERS;
+  const clusters = data?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -74,6 +68,26 @@ export default function ClustersPage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load clusters</p>
           <p className="text-sm text-gray-500 mb-4">{error.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (clusters.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Clusters</h1>
+            <p className="text-sm text-gray-500">0 active / 0 total</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No clusters found</p>
+          <p className="text-gray-400 text-xs mt-1">Provision a cluster to get started</p>
         </div>
       </div>
     );

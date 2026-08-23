@@ -25,17 +25,6 @@ interface RecoveryTest {
   rto_actual_minutes?: number;
 }
 
-const FALLBACK_PLANS: DRPlan[] = [
-  { id: '1', name: 'Full Region Failover', plan_type: 'full', priority: 1, rto_hours: 4, rpo_hours: 1, status: 'ready', is_active: true, last_tested_at: '2026-07-15T10:00:00Z' },
-  { id: '2', name: 'Database Recovery', plan_type: 'database', priority: 2, rto_hours: 2, rpo_hours: 0.5, status: 'ready', is_active: true, last_tested_at: '2026-08-01T14:00:00Z' },
-  { id: '3', name: 'Partial Failover', plan_type: 'partial', priority: 3, rto_hours: 1, rpo_hours: 0.25, status: 'needs_test', is_active: true },
-];
-
-const FALLBACK_TESTS: RecoveryTest[] = [
-  { id: '1', plan_id: '1', test_type: 'full_drill', status: 'completed', passed: true, scheduled_at: '2026-07-15T10:00:00Z', rto_actual_minutes: 180 },
-  { id: '2', plan_id: '2', test_type: 'restore_test', status: 'completed', passed: true, scheduled_at: '2026-08-01T14:00:00Z', rto_actual_minutes: 45 },
-];
-
 function getStatusDot(status: string): string {
   switch (status) {
     case 'ready': return 'bg-green-500';
@@ -63,8 +52,8 @@ export default function DisasterRecoveryPage() {
   const { data: planData, isLoading: plansLoading, error: plansError, refetch: refetchPlans } = useDRPlans('current-school');
   const { data: testData, isLoading: testsLoading, refetch: refetchTests } = useRecoveryTests('current-school');
 
-  const plans = planData?.data ?? FALLBACK_PLANS;
-  const tests = testData?.data ?? FALLBACK_TESTS;
+  const plans = planData?.data ?? [];
+  const tests = testData?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -96,6 +85,26 @@ export default function DisasterRecoveryPage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load DR plans</p>
           <p className="text-sm text-gray-500 mb-4">{plansError.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (plans.length === 0 && tests.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Disaster Recovery</h1>
+            <p className="text-sm text-gray-500">No plans configured</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No disaster recovery data available</p>
+          <p className="text-gray-400 text-xs mt-1">Create a DR plan to get started</p>
         </div>
       </div>
     );

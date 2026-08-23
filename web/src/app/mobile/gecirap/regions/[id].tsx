@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { useGeoRegions, useRegionHealth } from '@/features/gecirap/hooks';
 
 interface RegionDetail {
@@ -24,24 +25,6 @@ interface HealthEntry {
   last_checked_at: string;
 }
 
-const MOCK_DETAIL: RegionDetail = {
-  id: '1',
-  name: 'west-africa',
-  display_name: 'West Africa',
-  code: 'WA',
-  continent: 'Africa',
-  country: 'Senegal',
-  timezone: 'Africa/Dakar',
-  is_active: true,
-  latitude: 14.7167,
-  longitude: -17.4677,
-};
-
-const MOCK_HEALTH: HealthEntry[] = [
-  { id: '1', status: 'healthy', latency_ms: 12, availability_percent: 99.95, last_checked_at: new Date().toISOString() },
-  { id: '2', status: 'degraded', latency_ms: 85, availability_percent: 98.2, last_checked_at: new Date().toISOString() },
-];
-
 function getStatusColor(status: string): string {
   switch (status) {
     case 'healthy': return 'text-green-600 bg-green-50';
@@ -52,16 +35,57 @@ function getStatusColor(status: string): string {
 }
 
 export default function RegionDetailPage() {
-  const [region] = useState<RegionDetail>(MOCK_DETAIL);
-  const { refetch: refetchRegions } = useGeoRegions('current-school');
+  const params = useParams();
+  const id = params.id as string;
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: regionData, isLoading: regionsLoading, error: regionsError, refetch: refetchRegions } = useGeoRegions('current-school');
   const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useRegionHealth('current-school');
 
-  const healthEntries = healthData?.data ?? MOCK_HEALTH;
+  const region = regionData?.data?.find((r) => r.id === id) as RegionDetail | undefined;
+  const healthEntries = healthData?.data ?? [];
 
   const handleRefresh = useCallback(() => {
-    refetchRegions();
-    refetchHealth();
+    setRefreshing(true);
+    Promise.all([refetchRegions(), refetchHealth()]).finally(() => setRefreshing(false));
   }, [refetchRegions, refetchHealth]);
+
+  if (regionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/2" />
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-20 bg-gray-200 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (regionsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 font-semibold mb-2">Failed to load region</p>
+          <p className="text-sm text-gray-500 mb-4">{regionsError.message}</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!region) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">Region not found</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -82,14 +106,6 @@ export default function RegionDetailPage() {
           <p className="text-xs text-gray-500">Code</p>
           <p className="text-lg font-bold text-gray-900">{region.code}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Latitude</p>
-          <p className="text-lg font-bold text-gray-900">{region.latitude ?? 'N/A'}</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Longitude</p>
-          <p className="text-lg font-bold text-gray-900">{region.longitude ?? 'N/A'}</p>
-        </div>
       </div>
 
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
@@ -100,6 +116,8 @@ export default function RegionDetailPage() {
               <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
+        ) : healthEntries.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">No health data available</p>
         ) : (
           <div className="space-y-2">
             {healthEntries.map((entry) => (
@@ -124,9 +142,10 @@ export default function RegionDetailPage() {
 
       <button
         onClick={handleRefresh}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+        disabled={refreshing}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
       >
-        Refresh Data
+        {refreshing ? 'Refreshing...' : 'Refresh Data'}
       </button>
     </div>
   );

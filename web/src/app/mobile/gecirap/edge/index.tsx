@@ -7,22 +7,6 @@ interface EdgeNodeSummary { id: string; name: string; location: string; node_typ
 interface EdgeDeploymentSummary { id: string; name: string; version: string; status: string; }
 interface EdgeSyncSummary { id: string; job_name: string; sync_type: string; status: string; items_synced: number; items_failed: number; }
 
-const FALLBACK_NODES: EdgeNodeSummary[] = [
-  { id: '1', name: 'edge-dakar-01', location: 'Dakar, Senegal', node_type: 'compute', status: 'online', last_heartbeat_at: new Date().toISOString() },
-  { id: '2', name: 'edge-nairobi-01', location: 'Nairobi, Kenya', node_type: 'storage', status: 'online', last_heartbeat_at: new Date().toISOString() },
-  { id: '3', name: 'edge-abidjan-01', location: 'Abidjan, Ivory Coast', node_type: 'compute', status: 'offline' },
-];
-
-const FALLBACK_DEPLOYMENTS: EdgeDeploymentSummary[] = [
-  { id: '1', name: 'edge-api', version: '1.3.0', status: 'active' },
-  { id: '2', name: 'edge-cache', version: '2.0.1', status: 'active' },
-];
-
-const FALLBACK_SYNC: EdgeSyncSummary[] = [
-  { id: '1', job_name: 'data-sync-west', sync_type: 'full', status: 'completed', items_synced: 1520, items_failed: 0 },
-  { id: '2', job_name: 'data-sync-east', sync_type: 'incremental', status: 'running', items_synced: 340, items_failed: 2 },
-];
-
 function getStatusDot(status: string): string {
   switch (status) {
     case 'online': case 'active': case 'completed': return 'bg-green-500';
@@ -47,9 +31,9 @@ export default function EdgePage() {
   const { data: deployData, isLoading: deploysLoading, refetch: refetchDeploys } = useEdgeDeployments('current-school');
   const { data: syncData, isLoading: syncLoading, refetch: refetchSync } = useEdgeSyncJobs('current-school');
 
-  const nodes = nodeData?.data ?? FALLBACK_NODES;
-  const deployments = deployData?.data ?? FALLBACK_DEPLOYMENTS;
-  const syncJobs = syncData?.data ?? FALLBACK_SYNC;
+  const nodes = nodeData?.data ?? [];
+  const deployments = deployData?.data ?? [];
+  const syncJobs = syncData?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -82,6 +66,26 @@ export default function EdgePage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load edge data</p>
           <p className="text-sm text-gray-500 mb-4">{nodesError.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (nodes.length === 0 && deployments.length === 0 && syncJobs.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Edge Infrastructure</h1>
+            <p className="text-sm text-gray-500">0 online / 0 nodes</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No edge infrastructure data available</p>
+          <p className="text-gray-400 text-xs mt-1">Deploy edge nodes to get started</p>
         </div>
       </div>
     );

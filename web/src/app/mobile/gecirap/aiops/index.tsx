@@ -8,27 +8,6 @@ interface InfraEvent { id: string; event_type: string; severity: string; source:
 interface IncidentCorrelation { id: string; incident_name: string; correlation_score: number; root_cause_suspect?: string; status: string; detected_at: string; }
 interface Recommendation { id: string; recommendation_type: string; title: string; description: string; priority: string; status: string; }
 
-const FALLBACK_AGENTS: AIOpsAgent[] = [
-  { id: '1', name: 'anomaly-detector', agent_type: 'anomaly_detection', status: 'active', capabilities: ['metric-analysis', 'log-parsing'] },
-  { id: '2', name: 'incident-correlator', agent_type: 'correlation', status: 'active', capabilities: ['event-correlation', 'root-cause'] },
-  { id: '3', name: 'capacity-forecaster', agent_type: 'forecasting', status: 'active', capabilities: ['usage-prediction', 'cost-forecast'] },
-];
-
-const FALLBACK_EVENTS: InfraEvent[] = [
-  { id: '1', event_type: 'cpu_spike', severity: 'warning', source: 'prod-cluster-1', message: 'CPU usage exceeded 85% on node-3' },
-  { id: '2', event_type: 'disk_low', severity: 'critical', source: 'edge-dakar-01', message: 'Disk space below 10%' },
-  { id: '3', event_type: 'pod_restart', severity: 'info', source: 'staging-cluster', message: 'Pod auth-service restarted 3 times', resolved_at: new Date().toISOString() },
-];
-
-const FALLBACK_CORRELATIONS: IncidentCorrelation[] = [
-  { id: '1', incident_name: 'High Latency Incident', correlation_score: 0.92, root_cause_suspect: 'CPU saturation on worker nodes', status: 'open', detected_at: '2026-08-09T07:00:00Z' },
-];
-
-const FALLBACK_RECS: Recommendation[] = [
-  { id: '1', recommendation_type: 'cost', title: 'Right-size worker nodes', description: 'Reduce instance type from m5.xlarge to m5.large', priority: 'medium', status: 'pending' },
-  { id: '2', recommendation_type: 'performance', title: 'Add HPA', description: 'Enable horizontal pod autoscaler for api-gateway', priority: 'high', status: 'pending' },
-];
-
 function getSeverityColor(sev: string): string {
   switch (sev) {
     case 'critical': return 'text-red-700 bg-red-50';
@@ -62,10 +41,10 @@ export default function AIOpsPage() {
   const { data: corrData, isLoading: corrsLoading, refetch: refetchCorrs } = useIncidentCorrelations('current-school');
   const { data: recData, isLoading: recsLoading, refetch: refetchRecs } = useRecommendations('current-school');
 
-  const agents = agentData?.data ?? FALLBACK_AGENTS;
-  const events = eventData?.data ?? FALLBACK_EVENTS;
-  const correlations = corrData?.data ?? FALLBACK_CORRELATIONS;
-  const recommendations = recData?.data ?? FALLBACK_RECS;
+  const agents = agentData?.data ?? [];
+  const events = eventData?.data ?? [];
+  const correlations = corrData?.data ?? [];
+  const recommendations = recData?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -101,6 +80,27 @@ export default function AIOpsPage() {
       </div>
     );
   }
+
+  if (agents.length === 0 && events.length === 0 && correlations.length === 0 && recommendations.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">AIOps</h1>
+            <p className="text-sm text-gray-500">No agents configured</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No AIOps data available</p>
+          <p className="text-gray-400 text-xs mt-1">Deploy agents to start monitoring</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="flex items-center justify-between mb-6">

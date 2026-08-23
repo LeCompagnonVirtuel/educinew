@@ -12,12 +12,6 @@ interface CloudProviderSummary {
   status: 'healthy' | 'warning' | 'critical';
 }
 
-const FALLBACK_PROVIDERS: CloudProviderSummary[] = [
-  { id: '1', name: 'aws', display_name: 'Amazon Web Services', provider_type: 'aws', is_active: true, status: 'healthy' },
-  { id: '2', name: 'gcp', display_name: 'Google Cloud Platform', provider_type: 'gcp', is_active: true, status: 'healthy' },
-  { id: '3', name: 'azure', display_name: 'Microsoft Azure', provider_type: 'azure', is_active: true, status: 'warning' },
-];
-
 function getProviderColor(type: string): string {
   switch (type) {
     case 'aws': return 'text-orange-600 bg-orange-50';
@@ -39,7 +33,7 @@ function getStatusDot(status: string): string {
 export default function CloudProvidersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, error, refetch } = useCloudProviders('current-school');
-  const providers = data?.data ?? FALLBACK_PROVIDERS;
+  const providers = data?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -72,6 +66,26 @@ export default function CloudProvidersPage() {
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
             Retry
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (providers.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Cloud Providers</h1>
+            <p className="text-sm text-gray-500">0 active / 0 total</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No cloud providers configured</p>
+          <p className="text-gray-400 text-xs mt-1">Add a provider to get started</p>
         </div>
       </div>
     );

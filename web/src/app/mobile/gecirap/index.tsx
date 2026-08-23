@@ -9,21 +9,6 @@ interface DashboardMetric {
   status: 'healthy' | 'warning' | 'critical';
 }
 
-const FALLBACK_METRICS: DashboardMetric[] = [
-  { label: 'Cloud Providers', value: '3', status: 'healthy' },
-  { label: 'Active Clusters', value: '8', status: 'healthy' },
-  { label: 'Total Workloads', value: '142', status: 'healthy' },
-  { label: 'Unhealthy Nodes', value: '2', status: 'warning' },
-  { label: 'Open Incidents', value: '1', status: 'warning' },
-  { label: 'Unresolved Drifts', value: '0', status: 'healthy' },
-  { label: 'Unhealthy Networks', value: '0', status: 'healthy' },
-  { label: 'Active Policies', value: '12', status: 'healthy' },
-  { label: 'Exceeded Budgets', value: '0', status: 'healthy' },
-  { label: 'Offline Edge Nodes', value: '1', status: 'warning' },
-  { label: 'Unresolved Events', value: '3', status: 'warning' },
-  { label: 'Open Incidents', value: '1', status: 'critical' },
-];
-
 const MODULES = [
   { name: 'Cloud Providers', route: '/gecirap/cloud' },
   { name: 'Regions', route: '/gecirap/regions' },
@@ -57,7 +42,7 @@ function getStatusDot(status: string): string {
 }
 
 function computeMetrics(data: ReturnType<typeof useGecirapDashboard>['data']): DashboardMetric[] {
-  if (!data) return FALLBACK_METRICS;
+  if (!data) return [];
   return [
     { label: 'Cloud Providers', value: String(data.cloudProviders), status: 'healthy' },
     { label: 'Active Clusters', value: String(data.activeClusters), status: 'healthy' },
@@ -113,7 +98,7 @@ export default function GecirapDashboardPage() {
   }
 
   const healthyCount = metrics.filter((m) => m.status === 'healthy').length;
-  const overallScore = Math.round((healthyCount / metrics.length) * 100);
+  const overallScore = metrics.length > 0 ? Math.round((healthyCount / metrics.length) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -131,7 +116,14 @@ export default function GecirapDashboardPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
+      {metrics.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No infrastructure data available</p>
+          <p className="text-gray-400 text-xs mt-1">Connect cloud providers to see metrics</p>
+        </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-700">Infrastructure Health</h2>
           <span className={`px-2 py-1 rounded-full text-xs font-bold ${overallScore >= 80 ? 'text-green-600 bg-green-50' : overallScore >= 60 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50'}`}>
@@ -175,6 +167,8 @@ export default function GecirapDashboardPage() {
           ))}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

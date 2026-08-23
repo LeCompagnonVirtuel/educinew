@@ -13,13 +13,6 @@ interface RegionSummary {
   is_active: boolean;
 }
 
-const FALLBACK_REGIONS: RegionSummary[] = [
-  { id: '1', name: 'west-africa', display_name: 'West Africa', code: 'WA', continent: 'Africa', country: 'Senegal', is_active: true },
-  { id: '2', name: 'east-africa', display_name: 'East Africa', code: 'EA', continent: 'Africa', country: 'Kenya', is_active: true },
-  { id: '3', name: 'europe', display_name: 'Europe', code: 'EU', continent: 'Europe', country: 'France', is_active: true },
-  { id: '4', name: 'north-america', display_name: 'North America', code: 'NA', continent: 'America', country: 'USA', is_active: false },
-];
-
 function getContinentColor(continent: string): string {
   switch (continent) {
     case 'Africa': return 'text-green-700 bg-green-50';
@@ -33,7 +26,7 @@ function getContinentColor(continent: string): string {
 export default function RegionsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, error, refetch } = useGeoRegions('current-school');
-  const regions = data?.data ?? FALLBACK_REGIONS;
+  const regions = data?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -64,6 +57,26 @@ export default function RegionsPage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load regions</p>
           <p className="text-sm text-gray-500 mb-4">{error.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (regions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Regions</h1>
+            <p className="text-sm text-gray-500">0 active / 0 total</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No regions configured</p>
+          <p className="text-gray-400 text-xs mt-1">Add a region to get started</p>
         </div>
       </div>
     );

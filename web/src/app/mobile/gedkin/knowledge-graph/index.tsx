@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useKnowledgeEntities, useKnowledgeRelations, useGraphTraversal } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface GraphEntity {
   id: string;
@@ -17,22 +16,6 @@ interface GraphRelation {
   relation_type: string;
   weight: number;
 }
-
-const FALLBACK_ENTITIES: GraphEntity[] = [
-  { id: '1', name: 'Student Performance Model', entity_type: 'MODEL', confidence: 0.95 },
-  { id: '2', name: 'Fee Collection Process', entity_type: 'PROCESS', confidence: 0.88 },
-  { id: '3', name: 'Teacher Evaluation Metric', entity_type: 'METRIC', confidence: 0.91 },
-  { id: '4', name: 'Attendance Pattern', entity_type: 'PATTERN', confidence: 0.87 },
-  { id: '5', name: 'Exam Results Dataset', entity_type: 'DATASET', confidence: 0.93 },
-  { id: '6', name: 'Transport Route Optimization', entity_type: 'PROCESS', confidence: 0.82 },
-];
-
-const FALLBACK_RELATIONS: GraphRelation[] = [
-  { id: '1', source_id: '1', target_id: '5', relation_type: 'DEPENDS_ON', weight: 0.9 },
-  { id: '2', source_id: '1', target_id: '3', relation_type: 'MEASURED_BY', weight: 0.85 },
-  { id: '3', source_id: '4', target_id: '1', relation_type: 'INFLUENCES', weight: 0.78 },
-  { id: '4', source_id: '2', target_id: '1', relation_type: 'FUNDS', weight: 0.72 },
-];
 
 function getEntityTypeColor(type: string): string {
   switch (type) {
@@ -57,22 +40,35 @@ function getRelationLabel(type: string): string {
 
 export default function KnowledgeGraphPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const entitiesQuery = useKnowledgeEntities('current-school');
-  const relationsQuery = useKnowledgeRelations('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [entities, setEntities] = useState<GraphEntity[]>([]);
+  const [relations, setRelations] = useState<GraphRelation[]>([]);
 
-  const isLoading = entitiesQuery.isLoading || relationsQuery.isLoading;
-  const hasError = entitiesQuery.error || relationsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/knowledge-graph');
+      if (!res.ok) throw new Error('Failed to load knowledge graph');
+      const json = await res.json();
+      setEntities(json.entities ?? []);
+      setRelations(json.relations ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const entities = entitiesQuery.data?.data ?? FALLBACK_ENTITIES;
-  const relations = relationsQuery.data?.data ?? FALLBACK_RELATIONS;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([entitiesQuery.refetch(), relationsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [entitiesQuery, relationsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -87,13 +83,25 @@ export default function KnowledgeGraphPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load knowledge graph</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching graph data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (entities.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No graph data</p>
+          <p className="text-sm text-gray-500 mb-4">No knowledge graph entities are available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

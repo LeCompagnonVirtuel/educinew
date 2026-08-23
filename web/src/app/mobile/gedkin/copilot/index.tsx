@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useCopilotQuery, useCopilotConversations, useCopilotApprovals } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface CopilotEntry {
   id: string;
@@ -11,13 +10,6 @@ interface CopilotEntry {
   status: string;
   created_at: string;
 }
-
-const FALLBACK_ENTRIES: CopilotEntry[] = [
-  { id: '1', query_text: 'What is the projected enrollment for next quarter?', response_summary: 'Based on historical trends, enrollment is projected to grow 8.2%', confidence: 0.89, status: 'completed', created_at: '2026-08-09T10:00:00Z' },
-  { id: '2', query_text: 'Which students are at risk of dropping out?', response_summary: 'Identified 23 students with declining attendance and performance patterns', confidence: 0.82, status: 'completed', created_at: '2026-08-09T09:30:00Z' },
-  { id: '3', query_text: 'Optimize fee collection strategy', response_summary: 'Recommended staggered payment plans could improve collection by 15%', confidence: 0.78, status: 'completed', created_at: '2026-08-09T08:45:00Z' },
-  { id: '4', query_text: 'Compare teacher performance across departments', response_summary: 'Analysis shows Science department outperforms by 12% on student outcomes', confidence: 0.85, status: 'completed', created_at: '2026-08-08T16:00:00Z' },
-];
 
 function getConfidenceColor(confidence: number): string {
   if (confidence >= 0.85) return 'text-green-600';
@@ -45,24 +37,37 @@ function getStatusColor(status: string): string {
 
 export default function CopilotPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const queriesQuery = useCopilotQuery('current-school');
-  const conversationsQuery = useCopilotConversations('current-school');
-  const approvalsQuery = useCopilotApprovals('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [entries, setEntries] = useState<CopilotEntry[]>([]);
+  const [totalConversations, setTotalConversations] = useState(0);
+  const [totalApprovals, setTotalApprovals] = useState(0);
 
-  const isLoading = queriesQuery.isLoading || conversationsQuery.isLoading || approvalsQuery.isLoading;
-  const hasError = queriesQuery.error || conversationsQuery.error || approvalsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/copilot');
+      if (!res.ok) throw new Error('Failed to load copilot');
+      const json = await res.json();
+      setEntries(json.data ?? []);
+      setTotalConversations(json.conversations ?? 0);
+      setTotalApprovals(json.approvals ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const entries = queriesQuery.data?.data ?? FALLBACK_ENTRIES;
-  const totalConversations = conversationsQuery.data?.total ?? 28;
-  const totalApprovals = approvalsQuery.data?.total ?? 7;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([queriesQuery.refetch(), conversationsQuery.refetch(), approvalsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [queriesQuery, conversationsQuery, approvalsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -77,13 +82,25 @@ export default function CopilotPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load copilot</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching copilot data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (entries.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No copilot data</p>
+          <p className="text-sm text-gray-500 mb-4">No copilot queries are available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

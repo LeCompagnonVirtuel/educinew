@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { usePolicies, usePolicySimulations } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface Policy {
   id: string;
@@ -12,14 +11,6 @@ interface Policy {
   compliance_rate: number;
   last_reviewed: string;
 }
-
-const FALLBACK_POLICIES: Policy[] = [
-  { id: '1', name: 'Student Attendance Policy', category: 'Academic', status: 'active', impact_score: 0.88, compliance_rate: 0.92, last_reviewed: '2026-07-15' },
-  { id: '2', name: 'Fee Payment Guidelines', category: 'Financial', status: 'active', impact_score: 0.82, compliance_rate: 0.87, last_reviewed: '2026-06-20' },
-  { id: '3', name: 'Teacher Evaluation Framework', category: 'HR', status: 'active', impact_score: 0.91, compliance_rate: 0.78, last_reviewed: '2026-08-01' },
-  { id: '4', name: 'Data Privacy Compliance', category: 'Security', status: 'review', impact_score: 0.95, compliance_rate: 0.96, last_reviewed: '2026-07-28' },
-  { id: '5', name: 'Transport Safety Standards', category: 'Operations', status: 'active', impact_score: 0.87, compliance_rate: 0.83, last_reviewed: '2026-05-10' },
-];
 
 function getCategoryColor(category: string): string {
   switch (category) {
@@ -49,22 +40,35 @@ function getComplianceColor(rate: number): string {
 
 export default function PolicyPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const policiesQuery = usePolicies('current-school');
-  const simulationsQuery = usePolicySimulations('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [totalSimulations, setTotalSimulations] = useState(0);
 
-  const isLoading = policiesQuery.isLoading || simulationsQuery.isLoading;
-  const hasError = policiesQuery.error || simulationsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/policy');
+      if (!res.ok) throw new Error('Failed to load policies');
+      const json = await res.json();
+      setPolicies(json.data ?? []);
+      setTotalSimulations(json.simulations ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const policies = policiesQuery.data?.data ?? FALLBACK_POLICIES;
-  const totalSimulations = simulationsQuery.data?.total ?? 8;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([policiesQuery.refetch(), simulationsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [policiesQuery, simulationsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -79,13 +83,25 @@ export default function PolicyPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load policies</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching policy data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (policies.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No policies found</p>
+          <p className="text-sm text-gray-500 mb-4">No policy data is available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

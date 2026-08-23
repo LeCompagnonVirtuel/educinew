@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useDataDomains, useKnowledgeEntities, useObservatoryIndicators, useForecasts, useAIAgents, useCopilotQuery } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface DashboardMetric {
   label: string;
@@ -9,20 +8,20 @@ interface DashboardMetric {
   status: 'healthy' | 'warning' | 'critical';
 }
 
-const FALLBACK_METRICS: DashboardMetric[] = [
-  { label: 'Data Domains', value: '5', status: 'healthy' },
-  { label: 'Knowledge Entities', value: '234', status: 'healthy' },
-  { label: 'Indicators', value: '47', status: 'healthy' },
-  { label: 'Active Forecasts', value: '12', status: 'healthy' },
-  { label: 'AI Agents', value: '8', status: 'healthy' },
-  { label: 'Copilot Queries', value: '156', status: 'healthy' },
-  { label: 'Data Products', value: '23', status: 'healthy' },
-  { label: 'Graph Relations', value: '512', status: 'healthy' },
-  { label: 'Policy Simulations', value: '4', status: 'healthy' },
-  { label: 'Active Experiments', value: '6', status: 'healthy' },
-  { label: 'Marketplace Items', value: '15', status: 'healthy' },
-  { label: 'System Health', value: '99%', status: 'healthy' },
-];
+interface DashboardData {
+  domains?: { total: number };
+  entities?: { total: number };
+  indicators?: { total: number };
+  forecasts?: { total: number };
+  agents?: { total: number };
+  copilot?: { total: number };
+  products?: { total: number };
+  relations?: { total: number };
+  simulations?: { total: number };
+  experiments?: { total: number };
+  marketplace?: { total: number };
+  health?: number;
+}
 
 const MODULES = [
   { name: 'Data Fabric', route: '/gedkin/data-fabric' },
@@ -58,32 +57,48 @@ function getStatusDot(status: string): string {
 
 export default function GedkinDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const domains = useDataDomains('current-school');
-  const entities = useKnowledgeEntities('current-school');
-  const indicators = useObservatoryIndicators('current-school');
-  const forecasts = useForecasts('current-school');
-  const agents = useAIAgents('current-school');
-  const copilot = useCopilotQuery('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardData>({});
 
-  const isLoading = domains.isLoading || entities.isLoading || indicators.isLoading || forecasts.isLoading || agents.isLoading || copilot.isLoading;
-  const hasError = domains.error || entities.error || indicators.error || forecasts.error || agents.error || copilot.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/');
+      if (!res.ok) throw new Error('Failed to load dashboard');
+      const json = await res.json();
+      setData(json);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const metrics: DashboardMetric[] = [
-    { label: 'Data Domains', value: String(domains.data?.total ?? 5), status: 'healthy' },
-    { label: 'Knowledge Entities', value: String(entities.data?.total ?? 234), status: 'healthy' },
-    { label: 'Indicators', value: String(indicators.data?.total ?? 47), status: 'healthy' },
-    { label: 'Active Forecasts', value: String(forecasts.data?.total ?? 12), status: 'healthy' },
-    { label: 'AI Agents', value: String(agents.data?.total ?? 8), status: 'healthy' },
-    { label: 'Copilot Queries', value: String(copilot.data?.total ?? 156), status: 'healthy' },
+    { label: 'Data Domains', value: String(data.domains?.total ?? 0), status: 'healthy' },
+    { label: 'Knowledge Entities', value: String(data.entities?.total ?? 0), status: 'healthy' },
+    { label: 'Indicators', value: String(data.indicators?.total ?? 0), status: 'healthy' },
+    { label: 'Active Forecasts', value: String(data.forecasts?.total ?? 0), status: 'healthy' },
+    { label: 'AI Agents', value: String(data.agents?.total ?? 0), status: 'healthy' },
+    { label: 'Copilot Queries', value: String(data.copilot?.total ?? 0), status: 'healthy' },
+    { label: 'Data Products', value: String(data.products?.total ?? 0), status: 'healthy' },
+    { label: 'Graph Relations', value: String(data.relations?.total ?? 0), status: 'healthy' },
+    { label: 'Policy Simulations', value: String(data.simulations?.total ?? 0), status: 'healthy' },
+    { label: 'Active Experiments', value: String(data.experiments?.total ?? 0), status: 'healthy' },
+    { label: 'Marketplace Items', value: String(data.marketplace?.total ?? 0), status: 'healthy' },
+    { label: 'System Health', value: `${data.health ?? 0}%`, status: 'healthy' },
   ];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([domains.refetch(), entities.refetch(), indicators.refetch(), forecasts.refetch(), agents.refetch(), copilot.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [domains, entities, indicators, forecasts, agents, copilot]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -98,7 +113,7 @@ export default function GedkinDashboardPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
@@ -106,6 +121,20 @@ export default function GedkinDashboardPage() {
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching intelligence data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
             Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || metrics.every((m) => m.value === '0')) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No data available</p>
+          <p className="text-sm text-gray-500 mb-4">The dashboard has no intelligence data to display</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+            Refresh
           </button>
         </div>
       </div>

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useSimulations, useScenarios, useScenarioRuns, useSimulationResults } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface Simulation {
   id: string;
@@ -11,13 +10,6 @@ interface Simulation {
   scenario_count: number;
   last_run: string;
 }
-
-const FALLBACK_SIMULATIONS: Simulation[] = [
-  { id: '1', name: 'Enrollment Growth Scenario', type: 'ENROLLMENT', status: 'completed', scenario_count: 4, last_run: '2026-08-08T14:00:00Z' },
-  { id: '2', name: 'Budget Impact Analysis', type: 'FINANCIAL', status: 'running', scenario_count: 6, last_run: '2026-08-09T08:30:00Z' },
-  { id: '3', name: 'Staff Capacity Planning', type: 'STAFFING', status: 'completed', scenario_count: 3, last_run: '2026-08-07T16:00:00Z' },
-  { id: '4', name: 'Infrastructure Stress Test', type: 'INFRASTRUCTURE', status: 'completed', scenario_count: 5, last_run: '2026-08-06T10:00:00Z' },
-];
 
 function getTypeColor(type: string): string {
   switch (type) {
@@ -49,26 +41,39 @@ function getStatusColor(status: string): string {
 
 export default function SimulationPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const simulationsQuery = useSimulations('current-school');
-  const scenariosQuery = useScenarios('current-school');
-  const runsQuery = useScenarioRuns('current-school');
-  const resultsQuery = useSimulationResults('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [simulations, setSimulations] = useState<Simulation[]>([]);
+  const [totalScenarios, setTotalScenarios] = useState(0);
+  const [totalRuns, setTotalRuns] = useState(0);
+  const [totalResults, setTotalResults] = useState(0);
 
-  const isLoading = simulationsQuery.isLoading || scenariosQuery.isLoading || runsQuery.isLoading || resultsQuery.isLoading;
-  const hasError = simulationsQuery.error || scenariosQuery.error || runsQuery.error || resultsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/simulation');
+      if (!res.ok) throw new Error('Failed to load simulations');
+      const json = await res.json();
+      setSimulations(json.data ?? []);
+      setTotalScenarios(json.scenarios ?? 0);
+      setTotalRuns(json.runs ?? 0);
+      setTotalResults(json.results ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const simulations = simulationsQuery.data?.data ?? FALLBACK_SIMULATIONS;
-  const totalScenarios = scenariosQuery.data?.total ?? 18;
-  const totalRuns = runsQuery.data?.total ?? 42;
-  const totalResults = resultsQuery.data?.total ?? 35;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([simulationsQuery.refetch(), scenariosQuery.refetch(), runsQuery.refetch(), resultsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [simulationsQuery, scenariosQuery, runsQuery, resultsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -83,13 +88,25 @@ export default function SimulationPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load simulations</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching simulation engine data</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (simulations.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No simulations found</p>
+          <p className="text-sm text-gray-500 mb-4">No simulation engine data is available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

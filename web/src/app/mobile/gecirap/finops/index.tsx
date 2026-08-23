@@ -8,27 +8,6 @@ interface BudgetSummary { id: string; name: string; amount: number; spent_amount
 interface CostAnomaly { id: string; service_name: string; severity: string; expected_amount: number; actual_amount: number; }
 interface OptimizationRec { id: string; recommendation_type: string; resource_type: string; current_monthly_cost: number; savings_amount: number; savings_percent: number; status: string; }
 
-const FALLBACK_COSTS: CostSummary[] = [
-  { provider: 'aws', total_cost: 12450.00, currency: 'USD' },
-  { provider: 'gcp', total_cost: 8320.00, currency: 'USD' },
-  { provider: 'azure', total_cost: 4180.00, currency: 'USD' },
-];
-
-const FALLBACK_BUDGETS: BudgetSummary[] = [
-  { id: '1', name: 'Production Infrastructure', amount: 25000, spent_amount: 18900, currency: 'USD', status: 'active' },
-  { id: '2', name: 'Staging & Dev', amount: 5000, spent_amount: 4800, currency: 'USD', status: 'active' },
-  { id: '3', name: 'Edge Infrastructure', amount: 8000, spent_amount: 3200, currency: 'USD', status: 'active' },
-];
-
-const FALLBACK_ANOMALIES: CostAnomaly[] = [
-  { id: '1', service_name: 'EC2', severity: 'high', expected_amount: 4200, actual_amount: 6100 },
-];
-
-const FALLBACK_RECS: OptimizationRec[] = [
-  { id: '1', recommendation_type: 'right_sizing', resource_type: 'compute', current_monthly_cost: 3200, savings_amount: 960, savings_percent: 30, status: 'pending' },
-  { id: '2', recommendation_type: 'reserved_capacity', resource_type: 'database', current_monthly_cost: 2100, savings_amount: 525, savings_percent: 25, status: 'pending' },
-];
-
 function formatCurrency(amount: number, currency: string): string {
   return `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -56,9 +35,9 @@ export default function FinOpsPage() {
   const { data: recData, isLoading: recsLoading, refetch: refetchRecs } = useOptimizationRecommendations('current-school');
 
   const costs = costData?.data ?? [];
-  const budgets = budgetData?.data ?? FALLBACK_BUDGETS;
-  const anomalies = anomalyData?.data ?? FALLBACK_ANOMALIES;
-  const recommendations = recData?.data ?? FALLBACK_RECS;
+  const budgets = budgetData?.data ?? [];
+  const anomalies = anomalyData?.data ?? [];
+  const recommendations = recData?.data ?? [];
 
   const totalCost = costs.reduce((s, c) => s + c.cost_amount, 0);
   const providerCosts: CostSummary[] = costs.length > 0
@@ -67,7 +46,7 @@ export default function FinOpsPage() {
         acc[c.provider].total_cost += c.cost_amount;
         return acc;
       }, {}))
-    : FALLBACK_COSTS;
+    : [];
 
   const totalSavings = recommendations.reduce((s, r) => s + r.savings_amount, 0);
   const handleRefresh = useCallback(() => {
@@ -97,6 +76,27 @@ export default function FinOpsPage() {
       </div>
     );
   }
+
+  if (costs.length === 0 && budgets.length === 0 && anomalies.length === 0 && recommendations.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">FinOps</h1>
+            <p className="text-sm text-gray-500">No cost data available</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No FinOps data available</p>
+          <p className="text-gray-400 text-xs mt-1">Connect cloud providers to see cost data</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="flex items-center justify-between mb-6">

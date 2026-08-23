@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useObservatoryIndicators, useObservatoryDashboards } from '@/features/gedkin/hooks';
+import { useState, useCallback, useEffect } from 'react';
 
 interface Indicator {
   id: string;
@@ -13,15 +12,6 @@ interface Indicator {
   trend: 'up' | 'down' | 'stable';
   confidence: number;
 }
-
-const FALLBACK_INDICATORS: Indicator[] = [
-  { id: '1', name: 'Literacy Rate', category: 'Academic', current_value: 78.5, previous_value: 75.2, unit: '%', trend: 'up', confidence: 0.92 },
-  { id: '2', name: 'Student-Teacher Ratio', category: 'Operations', current_value: 28, previous_value: 30, unit: ':1', trend: 'down', confidence: 0.88 },
-  { id: '3', name: 'Fee Collection Rate', category: 'Financial', current_value: 92.3, previous_value: 89.1, unit: '%', trend: 'up', confidence: 0.95 },
-  { id: '4', name: 'Attendance Rate', category: 'Academic', current_value: 85.7, previous_value: 86.1, unit: '%', trend: 'down', confidence: 0.91 },
-  { id: '5', name: 'Graduation Rate', category: 'Academic', current_value: 68.2, previous_value: 65.8, unit: '%', trend: 'up', confidence: 0.87 },
-  { id: '6', name: 'Infrastructure Score', category: 'Operations', current_value: 7.2, previous_value: 6.9, unit: '/10', trend: 'up', confidence: 0.83 },
-];
 
 function getTrendIcon(trend: string): string {
   switch (trend) {
@@ -50,22 +40,35 @@ function getCategoryColor(category: string): string {
 
 export default function ObservatoryPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const indicatorsQuery = useObservatoryIndicators('current-school');
-  const dashboardsQuery = useObservatoryDashboards('current-school');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [totalDashboards, setTotalDashboards] = useState(0);
 
-  const isLoading = indicatorsQuery.isLoading || dashboardsQuery.isLoading;
-  const hasError = indicatorsQuery.error || dashboardsQuery.error;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/gedkin/observatory');
+      if (!res.ok) throw new Error('Failed to load observatory');
+      const json = await res.json();
+      setIndicators(json.data ?? []);
+      setTotalDashboards(json.dashboards ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const indicators = indicatorsQuery.data?.data ?? FALLBACK_INDICATORS;
-  const totalDashboards = dashboardsQuery.data?.total ?? 4;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([indicatorsQuery.refetch(), dashboardsQuery.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [indicatorsQuery, dashboardsQuery]);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="animate-pulse space-y-4">
@@ -80,13 +83,25 @@ export default function ObservatoryPage() {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-semibold mb-2">Failed to load observatory</p>
           <p className="text-sm text-gray-500 mb-4">An error occurred while fetching indicators</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (indicators.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 font-semibold mb-2">No indicators found</p>
+          <p className="text-sm text-gray-500 mb-4">No observatory indicators are available</p>
+          <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Refresh</button>
         </div>
       </div>
     );

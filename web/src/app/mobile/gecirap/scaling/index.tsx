@@ -24,17 +24,6 @@ interface ScalingEvent {
   triggered_at: string;
 }
 
-const FALLBACK_POLICIES: ScalingPolicy[] = [
-  { id: '1', name: 'api-cpu-scale', resource_type: 'deployment', policy_type: 'cpu', min_replicas: 2, max_replicas: 10, is_active: true, cooldown_seconds: 300 },
-  { id: '2', name: 'worker-mem-scale', resource_type: 'statefulset', policy_type: 'memory', min_replicas: 3, max_replicas: 8, is_active: true, cooldown_seconds: 600 },
-  { id: '3', name: 'queue-depth-scale', resource_type: 'deployment', policy_type: 'custom', min_replicas: 1, max_replicas: 20, is_active: false, cooldown_seconds: 120 },
-];
-
-const FALLBACK_EVENTS: ScalingEvent[] = [
-  { id: '1', policy_id: '1', event_type: 'scale_up', previous_replicas: 2, desired_replicas: 4, status: 'completed', triggered_at: '2026-08-09T08:00:00Z' },
-  { id: '2', policy_id: '2', event_type: 'scale_down', previous_replicas: 5, desired_replicas: 3, status: 'completed', triggered_at: '2026-08-09T06:30:00Z' },
-];
-
 function getStatusDot(status: string): string {
   switch (status) {
     case 'completed': return 'bg-green-500';
@@ -61,8 +50,8 @@ export default function ScalingPage() {
   const { data: policyData, isLoading: policiesLoading, error: policiesError, refetch: refetchPolicies } = useScalingPolicies('current-school');
   const { data: eventData, isLoading: eventsLoading, refetch: refetchEvents } = useScalingEvents('current-school');
 
-  const policies = policyData?.data ?? FALLBACK_POLICIES;
-  const events = eventData?.data ?? FALLBACK_EVENTS;
+  const policies = policyData?.data ?? [];
+  const events = eventData?.data ?? [];
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -93,6 +82,26 @@ export default function ScalingPage() {
           <p className="text-red-600 font-semibold mb-2">Failed to load scaling data</p>
           <p className="text-sm text-gray-500 mb-4">{policiesError.message}</p>
           <button onClick={handleRefresh} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (policies.length === 0 && events.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Autoscaling</h1>
+            <p className="text-sm text-gray-500">No policies configured</p>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">No scaling data available</p>
+          <p className="text-gray-400 text-xs mt-1">Create a scaling policy to get started</p>
         </div>
       </div>
     );
