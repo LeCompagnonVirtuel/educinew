@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
@@ -5,8 +6,6 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/ssr';
 import { logger } from '@educi/logger';
-
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
 import { cookies } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
+
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;

@@ -3,10 +3,10 @@ import { createRouteHandlerClient } from '@supabase/ssr';
 import { logger } from '@educi/logger';
 import { InteroperabilityDataContractService } from '@/features/gei2p/services/data-contract.service';
 import { updateDataContractSchema } from '@/features/gei2p/validators';
-
-export async function GET(
 import { cookies } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
+
+export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 const campaignsUpdateSchema = z.object({
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
   title: z.string().optional(),
   description: z.string().optional(),
   goal_amount: z.number().optional(),

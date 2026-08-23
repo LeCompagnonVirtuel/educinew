@@ -3,10 +3,10 @@ import { createRouteHandlerClient } from '@supabase/ssr';
 import { logger } from '@educi/logger';
 import { AeipAiDecisionExecutionService } from '@/features/aeip/services/aeip-ai-decision-execution.service';
 import { DecisionExecutionUpdateSchema } from '@/features/aeip/validators/ai-decision-validators';
-
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
 import { cookies } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
+
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;

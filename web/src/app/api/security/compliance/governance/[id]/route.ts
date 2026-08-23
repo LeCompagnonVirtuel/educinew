@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
@@ -5,8 +6,6 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 const UpdateGovernanceSchema = z.object({
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   type: z.enum(['POLICY', 'PROCEDURE', 'GUIDELINE', 'STANDARD', 'REGULATION']).optional(),
@@ -25,12 +24,12 @@ export async function GET(
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 401 });
     }
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,7 +37,7 @@ export async function GET(
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃƒÂ©' }, { status: 401 });
 
     const { id } = await params;
 
@@ -65,12 +64,12 @@ export async function PUT(
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 401 });
     }
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -78,7 +77,7 @@ export async function PUT(
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃƒÂ©' }, { status: 401 });
 
     const { data: profile } = await supabase
       .from('users')
@@ -88,7 +87,7 @@ export async function PUT(
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN'];
     if (!allowedRoles.includes(profile?.role)) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -99,7 +98,7 @@ export async function PUT(
         field: issue.path.join('.'),
         message: issue.message,
       }));
-      return NextResponse.json({ error: 'DonnÃ©es invalides', errors }, { status: 400 });
+      return NextResponse.json({ error: 'DonnÃƒÂ©es invalides', errors }, { status: 400 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -114,7 +113,7 @@ export async function PUT(
     if (data.status !== undefined) updateData.status = data.status;
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'Aucun champ Ã  modifier' }, { status: 400 });
+      return NextResponse.json({ error: 'Aucun champ ÃƒÂ  modifier' }, { status: 400 });
     }
 
     updateData.updated_at = new Date().toISOString();
@@ -144,12 +143,12 @@ export async function DELETE(
     const cookieStore = await cookies();
     const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
     if (!authCookie) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 401 });
     }
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 401 });
     }
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -157,7 +156,7 @@ export async function DELETE(
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃƒÂ©' }, { status: 401 });
 
     const { data: profile } = await supabase
       .from('users')
@@ -167,7 +166,7 @@ export async function DELETE(
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN'];
     if (!allowedRoles.includes(profile?.role)) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -180,7 +179,7 @@ export async function DELETE(
 
     if (!existing) return NextResponse.json({ error: 'Gouvernance introuvable' }, { status: 404 });
     if (existing.school_id !== profile?.school_id) {
-      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃƒÂ©' }, { status: 403 });
     }
 
     const { error } = await supabase.from('compliance_governance').delete().eq('id', id);
