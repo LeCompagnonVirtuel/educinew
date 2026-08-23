@@ -5,17 +5,29 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
+import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { id } = await params;
 
@@ -26,7 +38,7 @@ export async function GET(
       .is('deleted_at', null)
       .single();
 
-    if (error || !record) return NextResponse.json({ error: 'Tâche introuvable' }, { status: 404 });
+    if (error || !record) return NextResponse.json({ error: 'TÃ¢che introuvable' }, { status: 404 });
 
     return NextResponse.json(record);
   } catch (error) {

@@ -1,5 +1,7 @@
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+
 export const runtime = 'nodejs';
 
 function getSupabaseAdmin() {
@@ -29,6 +31,16 @@ function isForbiddenDomain(email: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const supabase = getSupabaseAdmin();
     const { sessionToken } = await request.json();
 
@@ -183,10 +195,30 @@ export async function POST(request: NextRequest) {
     // === ACADEMIC VALIDATIONS ===
     score += 1; // Academic year auto-generated
     try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
       const cycles = typeof draft.academic_cycles === 'string' ? JSON.parse(draft.academic_cycles) : draft.academic_cycles;
       if (Array.isArray(cycles) && cycles.length > 0) score += 1;
     } catch { /* invalid JSON, skip */ }
     try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
       const levels = typeof draft.academic_levels === 'string' ? JSON.parse(draft.academic_levels) : draft.academic_levels;
       if (Array.isArray(levels) && levels.length > 0) score += 1;
     } catch { /* invalid JSON, skip */ }
@@ -194,6 +226,16 @@ export async function POST(request: NextRequest) {
     // === MODULES VALIDATIONS ===
     let modules: string[] = [];
     try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
       modules = typeof draft.modules === 'string' ? JSON.parse(draft.modules) : draft.modules;
     } catch { /* invalid JSON */ }
     if (Array.isArray(modules) && modules.length > 0) {

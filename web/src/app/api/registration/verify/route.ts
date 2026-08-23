@@ -1,5 +1,7 @@
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+
 import { createHmac } from 'crypto';
 export const runtime = 'nodejs';
 
@@ -64,6 +66,16 @@ async function findDraftByToken(supabase: any, token: string, draftId?: string |
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const supabase = getSupabaseAdmin();
     const body = await request.json();
     const { token, draftId } = body;
@@ -168,6 +180,16 @@ export async function POST(request: NextRequest) {
       // RPC executed successfully — parse the JSONB result
       let parsed: any = null;
       try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
         parsed = typeof rpcResult.data === 'string' ? JSON.parse(rpcResult.data) : rpcResult.data;
       } catch {
         parsed = { success: false, error: 'Invalid server response' };
@@ -228,6 +250,16 @@ export async function POST(request: NextRequest) {
     // Generate magic link
     let magicLink: string | null = null;
     try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
       const { data: linkData } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: draft.owner_email,

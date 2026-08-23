@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const regulatoryUpdateSchema = z.object({
+import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
   filing_type: z.string().optional(),
   regulatory_body: z.string().optional(),
   fiscal_period: z.string().optional(),
@@ -19,11 +21,21 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -33,7 +45,7 @@ export async function GET(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const { data, error } = await supabase
@@ -45,7 +57,7 @@ export async function GET(
       .single();
 
     if (error || !data) {
-      return NextResponse.json({ error: 'Déclaration réglementaire non trouvé' }, { status: 404 });
+      return NextResponse.json({ error: 'DÃ©claration rÃ©glementaire non trouvÃ©' }, { status: 404 });
     }
 
     return NextResponse.json({ data });
@@ -62,11 +74,21 @@ export async function PUT(
   { params }: { params: Params }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -76,7 +98,7 @@ export async function PUT(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'DIRECTEUR', 'COMPTABLE'];
@@ -101,7 +123,7 @@ export async function PUT(
       .single();
 
     if (!existing || existing.school_id !== dbUser.school_id) {
-      return NextResponse.json({ error: 'Déclaration réglementaire non trouvé' }, { status: 404 });
+      return NextResponse.json({ error: 'DÃ©claration rÃ©glementaire non trouvÃ©' }, { status: 404 });
     }
 
     const { data, error } = await supabase
@@ -112,7 +134,7 @@ export async function PUT(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: `Erreur mise à jour Déclaration réglementaire: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur mise Ã  jour DÃ©claration rÃ©glementaire: ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -129,11 +151,21 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -143,7 +175,7 @@ export async function DELETE(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN'];
@@ -158,7 +190,7 @@ export async function DELETE(
       .single();
 
     if (!existing || existing.school_id !== dbUser.school_id) {
-      return NextResponse.json({ error: 'Déclaration réglementaire non trouvé' }, { status: 404 });
+      return NextResponse.json({ error: 'DÃ©claration rÃ©glementaire non trouvÃ©' }, { status: 404 });
     }
 
     const { error } = await supabase
@@ -167,10 +199,10 @@ export async function DELETE(
       .eq('id', id);
 
     if (error) {
-      return NextResponse.json({ error: `Erreur suppression Déclaration réglementaire: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur suppression DÃ©claration rÃ©glementaire: ${error.message}` }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Déclaration réglementaire supprimé avec succès' });
+    return NextResponse.json({ message: 'DÃ©claration rÃ©glementaire supprimÃ© avec succÃ¨s' });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erreur serveur' },

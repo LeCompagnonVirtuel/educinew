@@ -1,4 +1,6 @@
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
@@ -13,8 +15,17 @@ const cost_centersSchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = await createClient();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
@@ -76,8 +87,17 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = await createClient();
     if (authError || !user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }

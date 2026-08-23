@@ -1,5 +1,7 @@
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+
 import crypto from 'crypto';
 import { z } from 'zod';
 
@@ -54,6 +56,16 @@ export async function POST(req: NextRequest) {
   );
 
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const authHeader = req.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     const token = authHeader.replace('Bearer ', '');
@@ -336,6 +348,16 @@ export async function POST(req: NextRequest) {
 
       // Also write to attendance_events for parent notifications
       try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
         await supabase.from('attendance_events').insert({
           school_id: schoolId,
           student_id: person.id,
@@ -353,6 +375,16 @@ export async function POST(req: NextRequest) {
       // Send parent notification
       if (person.user?.parent_id) {
         try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
           await supabase.from('notifications').insert({
             user_id: person.user.parent_id,
             title: scan_type === 'ARRIVAL' ? 'Arrivée de votre enfant' : scan_type === 'DEPARTURE' ? 'Départ de votre enfant' : 'Pointage enfant',

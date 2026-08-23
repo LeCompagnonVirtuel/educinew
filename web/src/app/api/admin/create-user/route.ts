@@ -1,5 +1,7 @@
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
-import { createClient } from '@supabase/supabase-js';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { generateMatricule, isValidMatricule, normalizeMatricule } from '@/lib/matricule';
 export const runtime = 'nodejs';
@@ -201,6 +203,16 @@ export async function POST(req: NextRequest) {
   let qrToken = null;
   let qrUrl = null;
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const crypto = await import('crypto');
     const qrSecret = process.env.QR_SIGNING_SECRET;
     if (!qrSecret) {
@@ -231,6 +243,16 @@ export async function POST(req: NextRequest) {
 
       // Generate QR image via Edge Function (best-effort, non-blocking)
       try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
           const qrRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-qr`, {

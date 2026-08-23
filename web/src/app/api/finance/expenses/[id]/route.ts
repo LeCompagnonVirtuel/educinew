@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { logger } from '@educi/logger';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(req.cookies) });
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 });
@@ -37,9 +45,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(req.cookies) });
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 });
@@ -73,9 +88,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(req.cookies) });
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     if (!profile || !['SUPER_ADMIN', 'ADMIN'].includes(profile.role)) {

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const donationsUpdateSchema = z.object({
+import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
   campaign_id: z.string().optional(),
   donor_name: z.string().optional(),
   donor_email: z.string().optional(),
@@ -20,11 +22,21 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -34,7 +46,7 @@ export async function GET(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const { data, error } = await supabase
@@ -46,7 +58,7 @@ export async function GET(
       .single();
 
     if (error || !data) {
-      return NextResponse.json({ error: 'Don non trouvé' }, { status: 404 });
+      return NextResponse.json({ error: 'Don non trouvÃ©' }, { status: 404 });
     }
 
     return NextResponse.json({ data });
@@ -63,11 +75,21 @@ export async function PUT(
   { params }: { params: Params }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -77,7 +99,7 @@ export async function PUT(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'DIRECTEUR', 'COMPTABLE'];
@@ -102,7 +124,7 @@ export async function PUT(
       .single();
 
     if (!existing || existing.school_id !== dbUser.school_id) {
-      return NextResponse.json({ error: 'Don non trouvé' }, { status: 404 });
+      return NextResponse.json({ error: 'Don non trouvÃ©' }, { status: 404 });
     }
 
     const { data, error } = await supabase
@@ -113,7 +135,7 @@ export async function PUT(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: `Erreur mise à jour Don: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur mise Ã  jour Don: ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -130,11 +152,21 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const { data: dbUser } = await supabase
@@ -144,7 +176,7 @@ export async function DELETE(
       .single();
 
     if (!dbUser?.school_id) {
-      return NextResponse.json({ error: 'Aucun établissement associé' }, { status: 403 });
+      return NextResponse.json({ error: 'Aucun Ã©tablissement associÃ©' }, { status: 403 });
     }
 
     const allowedRoles = ['ADMIN', 'SUPER_ADMIN'];
@@ -159,7 +191,7 @@ export async function DELETE(
       .single();
 
     if (!existing || existing.school_id !== dbUser.school_id) {
-      return NextResponse.json({ error: 'Don non trouvé' }, { status: 404 });
+      return NextResponse.json({ error: 'Don non trouvÃ©' }, { status: 404 });
     }
 
     const { error } = await supabase
@@ -171,7 +203,7 @@ export async function DELETE(
       return NextResponse.json({ error: `Erreur suppression Don: ${error.message}` }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Don supprimé avec succès' });
+    return NextResponse.json({ message: 'Don supprimÃ© avec succÃ¨s' });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erreur serveur' },

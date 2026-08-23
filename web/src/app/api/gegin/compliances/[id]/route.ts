@@ -7,42 +7,64 @@ import { createCrudRepository } from '@/features/gegin/repositories/gegin-base.r
 const TABLE = 'gegin_compliances';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const schoolId = profile?.school_id;
-    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+    if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
     const { id } = await context.params;
     const repo = createCrudRepository(supabase, TABLE);
     const result = await repo.getById(id, schoolId);
 
-    if (!result) return NextResponse.json({ error: 'Conformité introuvable' }, { status: 404 });
+    if (!result) return NextResponse.json({ error: 'ConformitÃ© introuvable' }, { status: 404 });
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error('Erreur lors de la récupération de la conformité:', error);
+    logger.error('Erreur lors de la rÃ©cupÃ©ration de la conformitÃ©:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const role = profile?.role;
     const schoolId = profile?.school_id;
 
     if (!['ADMIN', 'SUPER_ADMIN', 'DIRECTEUR', 'COMPTABLE'].includes(role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
     }
-    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+    if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
     const { id } = await context.params;
     const body = await req.json();
@@ -52,35 +74,45 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         field: issue.path.join('.'),
         message: issue.message,
       }));
-      return NextResponse.json({ error: 'Données invalides', errors }, { status: 400 });
+      return NextResponse.json({ error: 'DonnÃ©es invalides', errors }, { status: 400 });
     }
 
     const repo = createCrudRepository(supabase, TABLE);
     const result = await repo.update(id, schoolId, validation.data);
 
-    if (!result) return NextResponse.json({ error: 'Conformité introuvable' }, { status: 404 });
+    if (!result) return NextResponse.json({ error: 'ConformitÃ© introuvable' }, { status: 404 });
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error('Erreur lors de la mise à jour de la conformité:', error);
+    logger.error('Erreur lors de la mise Ã  jour de la conformitÃ©:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
+    }
     const supabase = createRouteHandlerClient({ cookies: () => req.cookies });
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    if (!user) return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
 
     const { data: profile } = await supabase.from('users').select('role, school_id').eq('id', user.id).single();
     const role = profile?.role;
     const schoolId = profile?.school_id;
 
     if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 403 });
     }
-    if (!schoolId) return NextResponse.json({ error: 'Établissement requis' }, { status: 403 });
+    if (!schoolId) return NextResponse.json({ error: 'Ã‰tablissement requis' }, { status: 403 });
 
     const { id } = await context.params;
     const repo = createCrudRepository(supabase, TABLE);
@@ -88,7 +120,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('Erreur lors de la suppression de la conformité:', error);
+    logger.error('Erreur lors de la suppression de la conformitÃ©:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
   }
 }

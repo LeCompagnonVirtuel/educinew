@@ -1,5 +1,4 @@
 import { withSupabase } from '@supabase/server';
-import { createClient } from '@supabase/supabase-js';
 import { staffSchema, validateRequest } from '@/lib/api/validation';
 
 export const GET = withSupabase({ auth: 'user' }, async (req, ctx) => {
@@ -113,6 +112,16 @@ export const POST = withSupabase({ auth: 'user' }, async (req, ctx) => {
   }
 
   try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const { sbEmailTrigger } = await import('@/lib/api/domains/email-trigger.service');
     sbEmailTrigger.onTeacherCreated(validation.data.email, validation.data.name, tempPassword);
   } catch (e) {
