@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'crypto';
+import { checkRateLimit, rateLimitResponse, VERIFY_RATE_LIMIT } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 
 function getSupabaseAdmin() {
@@ -20,10 +21,9 @@ function hashToken(token: string): string {
   return createHmac('sha256', getVerificationSecret()).update(token).digest('hex');
 }
 
-async function findUserByToken(supabase: any, token: string) {
+async function findUserByToken(supabase: ReturnType<typeof createClient>, token: string) {
   const tokenHash = hashToken(token);
 
-  // Try hash
   const { data, error } = await supabase
     .from('users')
     .select('id, email, verification_expires_at, email_verified')
@@ -31,7 +31,6 @@ async function findUserByToken(supabase: any, token: string) {
     .single();
   if (data && !error) return data;
 
-  // Try raw token (legacy unhashed tokens)
   const { data: legacy, error: legacyErr } = await supabase
     .from('users')
     .select('id, email, verification_expires_at, email_verified')
@@ -43,6 +42,9 @@ async function findUserByToken(supabase: any, token: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = checkRateLimit(request, VERIFY_RATE_LIMIT);
+  if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const { token } = await request.json();

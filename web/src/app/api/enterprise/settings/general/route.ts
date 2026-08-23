@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withSupabase } from '@supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { EntGeneralSettingService } from '@/features/enterprise/services/ent-settings-general.service';
 
 async function checkSchoolAccess(supabase: any, schoolId: string) {
@@ -26,7 +27,16 @@ async function checkSchoolAccess(supabase: any, schoolId: string) {
 
 export const GET = withSupabase({ auth: 'user' }, async (req: NextRequest, ctx: any) => {
   try {
-    const supabase = ctx.supabase;
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const { searchParams } = new URL(req.url);
     const schoolId = searchParams.get('schoolId');
     const parentId = searchParams.get('parentId');
@@ -48,7 +58,16 @@ export const GET = withSupabase({ auth: 'user' }, async (req: NextRequest, ctx: 
 
 export const POST = withSupabase({ auth: 'user' }, async (req: NextRequest, ctx: any) => {
   try {
-    const supabase = ctx.supabase;
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('sb-')?.value || cookieStore.get('supabase-auth-token')?.value;
+    if (!authCookie) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, authCookie);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
     const body = await req.json();
     const schoolId = body.schoolId;
     const parentId = body.parentId;

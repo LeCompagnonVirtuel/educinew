@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, rateLimitResponse, VERIFY_RATE_LIMIT } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 
 function getSupabaseAdmin() {
@@ -10,6 +11,9 @@ function getSupabaseAdmin() {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = checkRateLimit(request, VERIFY_RATE_LIMIT);
+  if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const { token, userId } = await request.json();
