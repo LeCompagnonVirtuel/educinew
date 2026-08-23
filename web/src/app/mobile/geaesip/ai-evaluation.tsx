@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface EvalResult {
   id: string;
@@ -11,14 +11,6 @@ interface EvalResult {
   status: 'pass' | 'fail' | 'warn';
   evaluated_at: string;
 }
-
-const FALLBACK_RESULTS: EvalResult[] = [
-  { id: '1', model_name: 'Enrollment Predictor', metric: 'Accuracy', score: 0.92, benchmark: 0.85, status: 'pass', evaluated_at: '2026-08-10T08:00:00Z' },
-  { id: '2', model_name: 'Risk Classifier', metric: 'F1 Score', score: 0.78, benchmark: 0.80, status: 'fail', evaluated_at: '2026-08-10T07:30:00Z' },
-  { id: '3', model_name: 'Fee Default Detector', metric: 'Precision', score: 0.88, benchmark: 0.82, status: 'pass', evaluated_at: '2026-08-10T07:00:00Z' },
-  { id: '4', model_name: 'Attendance Forecaster', metric: 'RMSE', score: 0.15, benchmark: 0.20, status: 'pass', evaluated_at: '2026-08-09T16:00:00Z' },
-  { id: '5', model_name: 'Performance Grader', metric: 'AUC-ROC', score: 0.81, benchmark: 0.85, status: 'warn', evaluated_at: '2026-08-09T14:00:00Z' },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -45,9 +37,26 @@ function getScoreColor(score: number, benchmark: number): string {
 }
 
 export default function AIEvaluationPage() {
+  const [results, setResults] = useState<EvalResult[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const results = FALLBACK_RESULTS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/ai-evaluation');
+      if (res.ok) {
+        const data = await res.json();
+        setResults(Array.isArray(data) ? data : data.results ?? []);
+      }
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const passCount = results.filter((r) => r.status === 'pass').length;
   const avgScore = results.length > 0
     ? (results.reduce((sum, r) => sum + r.score, 0) / results.length * 100).toFixed(0)
@@ -55,8 +64,17 @@ export default function AIEvaluationPage() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -70,48 +88,56 @@ export default function AIEvaluationPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{results.length}</p>
-          <p className="text-xs text-gray-500">Models</p>
+      {results.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{passCount}</p>
-          <p className="text-xs text-gray-500">Passing</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-purple-600">{avgScore}%</p>
-          <p className="text-xs text-gray-500">Avg Score</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Evaluation Results</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {results.map((result) => (
-            <div key={result.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(result.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{result.model_name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(result.status)}`}>
-                  {result.status}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span>Metric: {result.metric}</span>
-                <span className={`font-bold ${getScoreColor(result.score, result.benchmark)}`}>
-                  Score: {(result.score * 100).toFixed(0)}%
-                </span>
-                <span>Benchmark: {(result.benchmark * 100).toFixed(0)}%</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{results.length}</p>
+              <p className="text-xs text-gray-500">Models</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{passCount}</p>
+              <p className="text-xs text-gray-500">Passing</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-purple-600">{avgScore}%</p>
+              <p className="text-xs text-gray-500">Avg Score</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Evaluation Results</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {results.map((result) => (
+                <div key={result.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(result.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{result.model_name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(result.status)}`}>
+                      {result.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span>Metric: {result.metric}</span>
+                    <span className={`font-bold ${getScoreColor(result.score, result.benchmark)}`}>
+                      Score: {(result.score * 100).toFixed(0)}%
+                    </span>
+                    <span>Benchmark: {(result.benchmark * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

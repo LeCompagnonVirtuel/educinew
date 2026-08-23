@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface TwinModel {
   id: string;
@@ -10,14 +10,6 @@ interface TwinModel {
   fidelity: number;
   last_update: string;
 }
-
-const FALLBACK_TWINS: TwinModel[] = [
-  { id: '1', name: 'School Infrastructure Twin', domain: 'Infrastructure', sync_status: 'synced', fidelity: 0.96, last_update: '2026-08-10T09:00:00Z' },
-  { id: '2', name: 'Student Flow Twin', domain: 'Academic', sync_status: 'synced', fidelity: 0.91, last_update: '2026-08-10T08:45:00Z' },
-  { id: '3', name: 'Financial Model Twin', domain: 'Financial', sync_status: 'drifted', fidelity: 0.78, last_update: '2026-08-09T14:00:00Z' },
-  { id: '4', name: 'HR Workforce Twin', domain: 'HR', sync_status: 'syncing', fidelity: 0.85, last_update: '2026-08-10T08:50:00Z' },
-  { id: '5', name: 'Transport Network Twin', domain: 'Logistics', sync_status: 'synced', fidelity: 0.89, last_update: '2026-08-10T07:30:00Z' },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -55,9 +47,26 @@ function getDomainColor(domain: string): string {
 }
 
 export default function DigitalTwinPage() {
+  const [twins, setTwins] = useState<TwinModel[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const twins = FALLBACK_TWINS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/digital-twin');
+      if (res.ok) {
+        const data = await res.json();
+        setTwins(Array.isArray(data) ? data : data.twins ?? []);
+      }
+    } catch {
+      setTwins([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const syncedCount = twins.filter((t) => t.sync_status === 'synced').length;
   const avgFidelity = twins.length > 0
     ? (twins.reduce((sum, t) => sum + t.fidelity, 0) / twins.length * 100).toFixed(0)
@@ -65,8 +74,17 @@ export default function DigitalTwinPage() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -80,51 +98,59 @@ export default function DigitalTwinPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{twins.length}</p>
-          <p className="text-xs text-gray-500">Twins</p>
+      {twins.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{syncedCount}</p>
-          <p className="text-xs text-gray-500">Synced</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-purple-600">{avgFidelity}%</p>
-          <p className="text-xs text-gray-500">Fidelity</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Twin Models</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {twins.map((twin) => (
-            <div key={twin.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(twin.sync_status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{twin.name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getDomainColor(twin.domain)}`}>
-                  {twin.domain}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(twin.sync_status)}`}>
-                  {twin.sync_status}
-                </span>
-                <span className={`font-semibold ${getFidelityColor(twin.fidelity)}`}>
-                  {(twin.fidelity * 100).toFixed(0)}% fidelity
-                </span>
-                <span>&middot;</span>
-                <span>{new Date(twin.last_update).toLocaleTimeString()}</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{twins.length}</p>
+              <p className="text-xs text-gray-500">Twins</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{syncedCount}</p>
+              <p className="text-xs text-gray-500">Synced</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-purple-600">{avgFidelity}%</p>
+              <p className="text-xs text-gray-500">Fidelity</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Twin Models</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {twins.map((twin) => (
+                <div key={twin.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(twin.sync_status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{twin.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getDomainColor(twin.domain)}`}>
+                      {twin.domain}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(twin.sync_status)}`}>
+                      {twin.sync_status}
+                    </span>
+                    <span className={`font-semibold ${getFidelityColor(twin.fidelity)}`}>
+                      {(twin.fidelity * 100).toFixed(0)}% fidelity
+                    </span>
+                    <span>&middot;</span>
+                    <span>{new Date(twin.last_update).toLocaleTimeString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

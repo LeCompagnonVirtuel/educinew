@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RoleLayout from '@/components/layout/RoleLayout';
-import { sbClasses, sbSubjects, sbTeachers } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { exportToFile, type ExportColumn } from '@/lib/export-utils';
 import { useExportBranding } from '@/hooks/useExportBranding';
@@ -107,21 +107,55 @@ export default function ClassesPage() {
     if (!user?.schoolId) return;
     setLoading(true);
     try {
-      const [classesData, analyticsData] = await Promise.all([
-        sbClasses.listWithPagination(search, { level: filters.level, stream: filters.stream }, currentPage),
-        sbClasses.getAnalytics(user.schoolId)
-      ]);
-      
-      setClasses(classesData.data || []);
-      setTotalPages(classesData.totalPages || 1);
-      setAnalytics(analyticsData as any || {
-        totalClasses: 0,
-        totalStudents: 0,
-        avgClassSize: 0,
-        byLevel: [],
-        byStream: [],
-        performanceByClass: []
-      });
+      const supabase = createClient();
+      const limit = 50;
+      const from = (currentPage - 1) * limit;
+      const to = from + limit - 1;
+
+      let query = supabase
+        .from('classes')
+        .select('*, students(id), class_subjects(*)', { count: 'exact' })
+        .eq('school_id', user.schoolId);
+
+      if (search) query = query.ilike('name', `%${search}%`);
+      if (filters.level) query = query.eq('level', filters.level);
+      if (filters.stream) query = query.eq('stream', filters.stream);
+
+      const { data: rows, error, count } = await query.range(from, to);
+      if (error) throw error;
+
+      const mapped = (rows || []).map((row: any) => ({
+        ...row,
+        studentCount: row.students?.length || 0,
+      }));
+      setClasses(mapped);
+      setTotalPages(Math.ceil((count || mapped.length) / limit));
+
+      const { data: allClasses, error: analyticsErr } = await supabase
+        .from('classes')
+        .select('*, students(*)')
+        .eq('school_id', user.schoolId);
+      if (analyticsErr) throw analyticsErr;
+
+      const totalClasses = (allClasses || []).length;
+      const totalStudents = (allClasses || []).reduce((sum: number, c: any) => sum + (c.students?.length || 0), 0);
+      const avgClassSize = totalClasses > 0 ? Math.round(totalStudents / totalClasses) : 0;
+      const byLevel = Object.entries(
+        (allClasses || []).reduce((acc: Record<string, number>, c: any) => {
+          const level = c.level || 'Autre';
+          acc[level] = (acc[level] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      ).map(([level, count]) => ({ level, count }));
+      const byStream = Object.entries(
+        (allClasses || []).reduce((acc: Record<string, number>, c: any) => {
+          const stream = c.stream || 'Autre';
+          acc[stream] = (acc[stream] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      ).map(([stream, count]) => ({ stream, count }));
+
+      setAnalytics({ totalClasses, totalStudents, avgClassSize, byLevel, byStream, performanceByClass: [] });
     } catch (e: any) {
       showToast(e.message, 'error');
     } finally {
@@ -137,12 +171,13 @@ export default function ClassesPage() {
     if (!user?.schoolId) return;
     async function loadDropdowns() {
       try {
-        const [subjects, teachers] = await Promise.all([
-          sbSubjects.list(user!.schoolId),
-          sbTeachers.list(user!.schoolId),
+        const supabase = createClient();
+        const [subjectsRes, teachersRes] = await Promise.all([
+          supabase.from('subjects').select('id, name, code').eq('school_id', user!.schoolId),
+          supabase.from('teachers').select('id, first_name, last_name, user:users(name)').eq('school_id', user!.schoolId),
         ]);
-        setAvailableSubjects((subjects || []).map((s: any) => ({ id: s.id, name: s.name, code: s.code || '' })));
-        setTeachersList((teachers || []).map((t: any) => ({ id: t.id, name: t.user?.name || `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Enseignant', subject: t.subject?.name || '' })));
+        setAvailableSubjects((subjectsRes.data || []).map((s: any) => ({ id: s.id, name: s.name, code: s.code || '' })));
+        setTeachersList((teachersRes.data || []).map((t: any) => ({ id: t.id, name: t.user?.name || `${t.first_name || ''} ${t.last_name || ''}`.trim() || 'Enseignant' })));
       } catch {}
     }
     loadDropdowns();
@@ -165,12 +200,14 @@ export default function ClassesPage() {
     if (!form.name) { showToast('Nom de classe requis', 'error'); return; }
     setActionLoading(true);
     try {
-      await sbClasses.create({
+      const supabase = createClient();
+      const { error } = await supabase.from('classes').insert({
         name: form.name,
         level: form.level || form.name,
         capacity: form.capacity || 45,
         school_id: user?.schoolId,
       });
+      if (error) throw error;
       showToast('Classe créée avec succès');
       setShowCreate(false);
       setForm({ name: '', level: '', stream: '', capacity: 45, academicYear: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`, mainTeacherId: '' });
@@ -183,11 +220,13 @@ export default function ClassesPage() {
     if (!showEdit) return;
     setActionLoading(true);
     try {
-      await sbClasses.update(showEdit.id, {
+      const supabase = createClient();
+      const { error } = await supabase.from('classes').update({
         name: form.name,
         level: form.level,
         capacity: form.capacity,
-      });
+      }).eq('id', showEdit.id);
+      if (error) throw error;
       showToast('Classe modifiée avec succès');
       setShowEdit(null);
       loadClasses();
@@ -199,7 +238,11 @@ export default function ClassesPage() {
     if (!showDelete) return;
     setActionLoading(true);
     try {
-      await sbClasses.remove(showDelete.id);
+      const supabase = createClient();
+      const { count } = await supabase.from('students').select('id', { count: 'exact', head: true }).eq('class_id', showDelete.id);
+      if (count && count > 0) throw new Error('Impossible de supprimer cette classe : des élèves y sont encore inscrits');
+      const { error } = await supabase.from('classes').delete().eq('id', showDelete.id);
+      if (error) throw error;
       showToast('Classe supprimée avec succès');
       setShowDelete(null);
       loadClasses();
@@ -210,13 +253,15 @@ export default function ClassesPage() {
   const handleDuplicate = async (cls: any) => {
     setActionLoading(true);
     try {
-      await sbClasses.create({
+      const supabase = createClient();
+      const { error } = await supabase.from('classes').insert({
         name: `${cls.name} (copie)`,
         level: cls.level,
         stream: cls.stream,
         capacity: cls.capacity,
-        school_id: user?.schoolId
+        school_id: user?.schoolId,
       });
+      if (error) throw error;
       showToast('Classe dupliquée avec succès');
       loadClasses();
     } catch (e: any) { showToast(e.message, 'error'); }
@@ -243,8 +288,7 @@ export default function ClassesPage() {
   const handleViewSchedule = async (cls: any) => {
     setShowTimetable(cls);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { data } = await supabase
         .from('timetable_slots')
         .select('id, day_of_week, start_time, end_time, subject:subjects(name), teacher:teachers(user:users(name)), room:rooms(name)')
@@ -272,8 +316,7 @@ export default function ClassesPage() {
     if (!showTimetable?.id) return;
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const dayMap: Record<string, number> = { MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
       const { data: inserted, error } = await supabase
         .from('timetable_slots')
@@ -313,8 +356,7 @@ export default function ClassesPage() {
   const handleRemoveTimetableSlot = async (slotId: number) => {
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { error } = await supabase.from('timetable_slots').delete().eq('id', String(slotId));
       if (error) throw error;
       setTimetableSlots(timetableSlots.filter(s => s.id !== slotId));
@@ -329,8 +371,7 @@ export default function ClassesPage() {
   const handleOpenRoomAssignment = async (cls: any) => {
     setShowRoomAssignment(cls);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { data } = await supabase
         .from('room_assignments')
         .select('id, room_id, day_of_week, start_time, end_time, room:rooms(name, building)')
@@ -357,8 +398,7 @@ export default function ClassesPage() {
     if (!showRoomAssignment?.id) return;
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { data: inserted, error } = await supabase
         .from('room_assignments')
         .insert({
@@ -393,8 +433,7 @@ export default function ClassesPage() {
   const handleRemoveRoomAssignment = async (assignmentId: number) => {
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { error } = await supabase.from('room_assignments').delete().eq('id', String(assignmentId));
       if (error) throw error;
       setAssignedRooms(assignedRooms.filter(r => r.id !== assignmentId));
@@ -409,8 +448,7 @@ export default function ClassesPage() {
   const handleOpenSubjectManagement = async (cls: any) => {
     setShowSubjectManagement(cls);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { data } = await supabase
         .from('class_subjects')
         .select('id, hours_per_week, subject:subjects(id, name), teacher:teachers(id, user:users(name))')
@@ -434,8 +472,7 @@ export default function ClassesPage() {
     if (!showSubjectManagement?.id) return;
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { data: inserted, error } = await supabase
         .from('class_subjects')
         .insert({
@@ -467,8 +504,7 @@ export default function ClassesPage() {
   const handleRemoveSubject = async (subjectId: number) => {
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { error } = await supabase.from('class_subjects').delete().eq('id', subjectId);
       if (error) throw error;
       setClassSubjects(classSubjects.filter(s => s.id !== subjectId));
@@ -488,8 +524,7 @@ export default function ClassesPage() {
     if (!showMerge?.id) return;
     setActionLoading(true);
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { error } = await supabase
         .from('students')
         .update({ class_id: mergeTarget })
@@ -550,8 +585,7 @@ export default function ClassesPage() {
       return;
     }
     try {
-      const { getSupabase } = await import('@/lib/api/shared');
-      const supabase = getSupabase();
+      const supabase = createClient();
       const { error } = await supabase
         .from('class_subjects')
         .upsert({

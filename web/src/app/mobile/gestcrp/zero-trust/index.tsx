@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ZeroTrustPolicy {
   id: string;
@@ -10,13 +10,6 @@ interface ZeroTrustPolicy {
   enforcement_mode: 'STRICT' | 'MODERATE' | 'ADVISORY';
   zones: string[];
 }
-
-const MOCK_POLICIES: ZeroTrustPolicy[] = [
-  { id: '1', name: 'Network Segmentation', enabled: true, priority: 1, enforcement_mode: 'STRICT', zones: ['internal', 'dmz'] },
-  { id: '2', name: 'Device Authentication', enabled: true, priority: 2, enforcement_mode: 'STRICT', zones: ['all'] },
-  { id: '3', name: 'Micro-Segmentation', enabled: true, priority: 3, enforcement_mode: 'MODERATE', zones: ['production'] },
-  { id: '4', name: 'Data Access Control', enabled: false, priority: 4, enforcement_mode: 'ADVISORY', zones: ['sensitive'] },
-];
 
 function getEnforcementColor(mode: string): string {
   switch (mode) {
@@ -29,14 +22,39 @@ function getEnforcementColor(mode: string): string {
 
 export default function ZeroTrustPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [policies] = useState<ZeroTrustPolicy[]>(MOCK_POLICIES);
+  const [loading, setLoading] = useState(true);
+  const [policies, setPolicies] = useState<ZeroTrustPolicy[]>([]);
 
-  const activeCount = policies.filter((p) => p.enabled).length;
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/zero-trust/policies');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      setPolicies(json.data || []);
+    } catch {
+      setPolicies([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  const activeCount = policies.filter((p) => p.enabled).length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -69,27 +87,33 @@ export default function ZeroTrustPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {policies.map((policy) => (
-          <div key={policy.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-base font-bold text-gray-900">{policy.name}</span>
-              <span className={`w-2.5 h-2.5 rounded-full ${policy.enabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+      {policies.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucune politique Zero Trust trouvée</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {policies.map((policy) => (
+            <div key={policy.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-base font-bold text-gray-900">{policy.name}</span>
+                <span className={`w-2.5 h-2.5 rounded-full ${policy.enabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getEnforcementColor(policy.enforcement_mode)}`}>
+                  {policy.enforcement_mode}
+                </span>
+                <span className="text-xs text-gray-500">Priority: {policy.priority}</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {policy.zones && policy.zones.map((zone) => (
+                  <span key={zone} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{zone}</span>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getEnforcementColor(policy.enforcement_mode)}`}>
-                {policy.enforcement_mode}
-              </span>
-              <span className="text-xs text-gray-500">Priority: {policy.priority}</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {policy.zones.map((zone) => (
-                <span key={zone} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{zone}</span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

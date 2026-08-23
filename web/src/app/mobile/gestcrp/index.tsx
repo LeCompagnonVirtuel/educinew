@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SecurityScore {
   overall: number;
@@ -11,26 +11,27 @@ interface SecurityScore {
   deviceComplianceRate: number;
 }
 
-const DEFAULT_SCORE: SecurityScore = {
-  overall: 87,
-  riskLevel: 'LOW',
-  openIncidents: 2,
-  activeThreats: 12,
-  complianceRate: 94.5,
-  deviceComplianceRate: 96.2,
-};
+interface DashboardData {
+  securityScore: number;
+  incidents: { total: number; open: number; critical: number };
+  zeroTrust: { totalPolicies: number; activePolicies: number };
+  compliance: { totalAssessments: number; completed: number; avgScore: number };
+  threats: { totalIndicators: number; active: number };
+  vulnerabilities: { total: number; open: number };
+  devices: { total: number; active: number };
+}
 
 const MODULES = [
-  { name: 'Zero Trust', score: 92, status: 'active' as const, route: '/gestcrp/zero-trust' },
-  { name: 'IAM', score: 88, status: 'active' as const, route: '/gestcrp/iam' },
-  { name: 'SOC', score: 75, status: 'warning' as const, route: '/gestcrp/soc' },
-  { name: 'Threats', score: 81, status: 'active' as const, route: '/gestcrp/threats' },
-  { name: 'App Security', score: 70, status: 'warning' as const, route: '/gestcrp/app-security' },
-  { name: 'Data Security', score: 95, status: 'active' as const, route: '/gestcrp/data-security' },
-  { name: 'Devices', score: 96, status: 'active' as const, route: '/gestcrp/devices' },
-  { name: 'Compliance', score: 94, status: 'active' as const, route: '/gestcrp/compliance' },
-  { name: 'BCP', score: 88, status: 'active' as const, route: '/gestcrp/bcp' },
-  { name: 'Cyber Twin', score: 82, status: 'active' as const, route: '/gestcrp/cyber-twin' },
+  { name: 'Zero Trust', route: '/gestcrp/zero-trust' },
+  { name: 'IAM', route: '/gestcrp/iam' },
+  { name: 'SOC', route: '/gestcrp/soc' },
+  { name: 'Threats', route: '/gestcrp/threats' },
+  { name: 'App Security', route: '/gestcrp/app-security' },
+  { name: 'Data Security', route: '/gestcrp/data-security' },
+  { name: 'Devices', route: '/gestcrp/devices' },
+  { name: 'Compliance', route: '/gestcrp/compliance' },
+  { name: 'BCP', route: '/gestcrp/bcp' },
+  { name: 'Cyber Twin', route: '/gestcrp/cyber-twin' },
 ];
 
 function getRiskColor(level: string): string {
@@ -49,23 +50,67 @@ function getScoreColor(score: number): string {
   return 'text-red-600';
 }
 
-function getStatusDot(status: string): string {
-  switch (status) {
-    case 'active': return 'bg-green-500';
-    case 'warning': return 'bg-yellow-500';
-    case 'critical': return 'bg-red-500';
-    default: return 'bg-gray-400';
-  }
+function getStatusDot(score: number): string {
+  if (score >= 80) return 'bg-green-500';
+  if (score >= 60) return 'bg-yellow-500';
+  return 'bg-red-500';
+}
+
+function getRiskLevel(score: number): string {
+  if (score >= 90) return 'LOW';
+  if (score >= 70) return 'MEDIUM';
+  if (score >= 50) return 'HIGH';
+  return 'CRITICAL';
 }
 
 export default function GestcrpDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [score] = useState<SecurityScore>(DEFAULT_SCORE);
+  const [loading, setLoading] = useState(true);
+  const [score, setScore] = useState<SecurityScore | null>(null);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/dashboard');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json: DashboardData = await res.json();
+      setScore({
+        overall: json.securityScore || 0,
+        riskLevel: getRiskLevel(json.securityScore || 0),
+        openIncidents: json.incidents?.open || 0,
+        activeThreats: json.threats?.active || 0,
+        complianceRate: json.compliance?.avgScore || 0,
+        deviceComplianceRate: json.devices?.total ? Math.round((json.devices.active / json.devices.total) * 100) : 0,
+      });
+    } catch {
+      setScore({ overall: 0, riskLevel: 'CRITICAL', openIncidents: 0, activeThreats: 0, complianceRate: 0, deviceComplianceRate: 0 });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    fetchData();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
+
+  if (!score) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Aucune donnée disponible</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -129,10 +174,10 @@ export default function GestcrpDashboardPage() {
           {MODULES.map((mod) => (
             <div key={mod.name} className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3">
-                <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(mod.status)}`} />
+                <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(score.overall)}`} />
                 <span className="text-sm text-gray-700">{mod.name}</span>
               </div>
-              <span className={`text-sm font-bold ${getScoreColor(mod.score)}`}>{mod.score}</span>
+              <span className={`text-sm font-bold ${getScoreColor(score.overall)}`}>{score.overall}</span>
             </div>
           ))}
         </div>

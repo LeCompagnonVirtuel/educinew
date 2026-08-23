@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface FabricNode {
   id: string;
@@ -11,15 +11,6 @@ interface FabricNode {
   latency_ms: number;
   error_rate: number;
 }
-
-const FALLBACK_NODES: FabricNode[] = [
-  { id: '1', name: 'Student API Gateway', type: 'api', status: 'healthy', throughput: 1250, latency_ms: 45, error_rate: 0.01 },
-  { id: '2', name: 'Payment Event Bus', type: 'event', status: 'healthy', throughput: 890, latency_ms: 12, error_rate: 0.005 },
-  { id: '3', name: 'Grade Webhook Receiver', type: 'webhook', status: 'degraded', throughput: 320, latency_ms: 230, error_rate: 0.08 },
-  { id: '4', name: 'Attendance Stream Processor', type: 'stream', status: 'healthy', throughput: 2100, latency_ms: 8, error_rate: 0.002 },
-  { id: '5', name: 'Notification Event Hub', type: 'event', status: 'healthy', throughput: 560, latency_ms: 15, error_rate: 0.003 },
-  { id: '6', name: 'Report Generation API', type: 'api', status: 'healthy', throughput: 180, latency_ms: 340, error_rate: 0.02 },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -56,9 +47,26 @@ function getLatencyColor(ms: number): string {
 }
 
 export default function ApiEventFabricPage() {
+  const [nodes, setNodes] = useState<FabricNode[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const nodes = FALLBACK_NODES;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/api-event-fabric');
+      if (res.ok) {
+        const data = await res.json();
+        setNodes(Array.isArray(data) ? data : data.nodes ?? []);
+      }
+    } catch {
+      setNodes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const totalThroughput = nodes.reduce((sum, n) => sum + n.throughput, 0);
   const avgLatency = nodes.length > 0
     ? Math.round(nodes.reduce((sum, n) => sum + n.latency_ms, 0) / nodes.length)
@@ -66,8 +74,17 @@ export default function ApiEventFabricPage() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -81,51 +98,59 @@ export default function ApiEventFabricPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{nodes.length}</p>
-          <p className="text-xs text-gray-500">Endpoints</p>
+      {nodes.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{totalThroughput.toLocaleString()}</p>
-          <p className="text-xs text-gray-500">Throughput/m</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-purple-600">{avgLatency}ms</p>
-          <p className="text-xs text-gray-500">Avg Latency</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Fabric Nodes</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {nodes.map((node) => (
-            <div key={node.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(node.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{node.name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(node.type)}`}>
-                  {node.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(node.status)}`}>
-                  {node.status}
-                </span>
-                <span>{node.throughput.toLocaleString()}/min</span>
-                <span className={`font-semibold ${getLatencyColor(node.latency_ms)}`}>
-                  {node.latency_ms}ms
-                </span>
-                <span>Errors: {(node.error_rate * 100).toFixed(1)}%</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{nodes.length}</p>
+              <p className="text-xs text-gray-500">Endpoints</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{totalThroughput.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">Throughput/m</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-purple-600">{avgLatency}ms</p>
+              <p className="text-xs text-gray-500">Avg Latency</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Fabric Nodes</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {nodes.map((node) => (
+                <div key={node.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(node.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{node.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(node.type)}`}>
+                      {node.type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(node.status)}`}>
+                      {node.status}
+                    </span>
+                    <span>{node.throughput.toLocaleString()}/min</span>
+                    <span className={`font-semibold ${getLatencyColor(node.latency_ms)}`}>
+                      {node.latency_ms}ms
+                    </span>
+                    <span>Errors: {(node.error_rate * 100).toFixed(1)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

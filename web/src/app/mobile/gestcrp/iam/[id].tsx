@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 
 interface IAMPolicyDetail {
   id: string;
@@ -15,29 +16,46 @@ interface IAMPolicyDetail {
   priority: number;
 }
 
-const MOCK_DETAIL: IAMPolicyDetail = {
-  id: '1',
-  name: 'Admin Full Access',
-  description: 'Grants full administrative access to all school resources and system configurations.',
-  enabled: true,
-  effect: 'ALLOW',
-  subjects: ['SUPER_ADMIN', 'ADMIN'],
-  resources: ['*'],
-  actions: ['read', 'write', 'delete', 'manage'],
-  conditions: [
-    { type: 'mfa_verified', operator: 'equals', value: 'true' },
-    { type: 'ip_range', operator: 'in', value: '10.0.0.0/8' },
-    { type: 'time_window', operator: 'between', value: '00:00-23:59' },
-  ],
-  priority: 1,
-};
-
 function getEffectColor(effect: string): string {
   return effect === 'ALLOW' ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50';
 }
 
 export default function IAMPolicyDetailPage() {
-  const [policy] = useState<IAMPolicyDetail>(MOCK_DETAIL);
+  const params = useParams();
+  const id = params?.id as string;
+  const [loading, setLoading] = useState(true);
+  const [policy, setPolicy] = useState<IAMPolicyDetail | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/security/iam/policies/${id}`);
+        if (!res.ok) throw new Error('Politique introuvable');
+        setPolicy(await res.json());
+      } catch {
+        setPolicy(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
+
+  if (!policy) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Politique introuvable</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -66,42 +84,48 @@ export default function IAMPolicyDetailPage() {
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Resources</p>
-          <p className="text-lg font-bold text-gray-900">{policy.resources.length}</p>
+          <p className="text-lg font-bold text-gray-900">{policy.resources?.length || 0}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Subjects</h2>
-        <div className="flex flex-wrap gap-2">
-          {policy.subjects.map((s) => (
-            <span key={s} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">{s}</span>
-          ))}
+      {policy.subjects && policy.subjects.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Subjects</h2>
+          <div className="flex flex-wrap gap-2">
+            {policy.subjects.map((s) => (
+              <span key={s} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">{s}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Actions</h2>
-        <div className="flex flex-wrap gap-2">
-          {policy.actions.map((a) => (
-            <span key={a} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">{a}</span>
-          ))}
+      {policy.actions && policy.actions.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Actions</h2>
+          <div className="flex flex-wrap gap-2">
+            {policy.actions.map((a) => (
+              <span key={a} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">{a}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Conditions</h2>
-        <div className="space-y-2">
-          {policy.conditions.map((cond, idx) => (
-            <div key={idx} className="p-2 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">{cond.type}</span>
-                <span className="text-xs text-gray-500">{cond.operator}</span>
+      {policy.conditions && policy.conditions.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Conditions</h2>
+          <div className="space-y-2">
+            {policy.conditions.map((cond, idx) => (
+              <div key={idx} className="p-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">{cond.type}</span>
+                  <span className="text-xs text-gray-500">{cond.operator}</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{cond.value}</p>
               </div>
-              <p className="text-sm text-gray-600 mt-1">{cond.value}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface BCPPlan {
   id: string;
@@ -10,20 +10,6 @@ interface BCPPlan {
   last_tested_at?: string;
   next_test_at?: string;
 }
-
-const MOCK_PLANS: BCPPlan[] = [
-  { id: '1', name: 'Data Center Failover', status: 'ACTIVE', scope: 'Infrastructure', last_tested_at: '2026-07-01T00:00:00Z', next_test_at: '2026-10-01T00:00:00Z' },
-  { id: '2', name: 'Student Data Recovery', status: 'ACTIVE', scope: 'Database', last_tested_at: '2026-06-15T00:00:00Z', next_test_at: '2026-09-15T00:00:00Z' },
-  { id: '3', name: 'Payment System DR', status: 'TESTING', scope: 'Payments', last_tested_at: '2026-08-05T00:00:00Z', next_test_at: '2026-08-12T00:00:00Z' },
-  { id: '4', name: 'Communication Backup', status: 'DRAFT', scope: 'Messaging', last_tested_at: undefined, next_test_at: undefined },
-];
-
-const STATS = {
-  activePlans: 8,
-  totalBackupJobs: 342,
-  failedBackupJobs: 3,
-  lastDRTestSuccess: true,
-};
 
 function getStatusColor(status: string): string {
   switch (status) {
@@ -48,12 +34,39 @@ function getStatusDot(status: string): string {
 
 export default function BCPPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [plans] = useState<BCPPlan[]>(MOCK_PLANS);
+  const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState<BCPPlan[]>([]);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/bcp/plans');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      setPlans(json.data || []);
+    } catch {
+      setPlans([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  const activePlans = plans.filter((p) => p.status === 'ACTIVE').length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -74,44 +87,40 @@ export default function BCPPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Active Plans</p>
-          <p className="text-lg font-bold text-violet-600">{STATS.activePlans}</p>
+          <p className="text-lg font-bold text-violet-600">{activePlans}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Backup Jobs</p>
-          <p className="text-lg font-bold text-blue-600">{STATS.totalBackupJobs}</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Failed Backups</p>
-          <p className="text-lg font-bold text-red-600">{STATS.failedBackupJobs}</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Last DR Test</p>
-          <p className={`text-lg font-bold ${STATS.lastDRTestSuccess ? 'text-green-600' : 'text-red-600'}`}>
-            {STATS.lastDRTestSuccess ? 'Pass' : 'Fail'}
-          </p>
+          <p className="text-xs text-gray-500">Total Plans</p>
+          <p className="text-lg font-bold text-gray-900">{plans.length}</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {plans.map((plan) => (
-          <div key={plan.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(plan.status)}`} />
-                <span className="text-base font-bold text-gray-900">{plan.name}</span>
+      {plans.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucun plan de continuité trouvé</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {plans.map((plan) => (
+            <div key={plan.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(plan.status)}`} />
+                  <span className="text-base font-bold text-gray-900">{plan.name}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(plan.status)}`}>{plan.status}</span>
               </div>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(plan.status)}`}>{plan.status}</span>
+              <p className="text-xs text-gray-500 mb-2">Scope: {plan.scope}</p>
+              {plan.last_tested_at && (
+                <p className="text-xs text-gray-400">Last tested: {new Date(plan.last_tested_at).toLocaleDateString()}</p>
+              )}
+              {plan.next_test_at && (
+                <p className="text-xs text-gray-400">Next test: {new Date(plan.next_test_at).toLocaleDateString()}</p>
+              )}
             </div>
-            <p className="text-xs text-gray-500 mb-2">Scope: {plan.scope}</p>
-            {plan.last_tested_at && (
-              <p className="text-xs text-gray-400">Last tested: {new Date(plan.last_tested_at).toLocaleDateString()}</p>
-            )}
-            {plan.next_test_at && (
-              <p className="text-xs text-gray-400">Next test: {new Date(plan.next_test_at).toLocaleDateString()}</p>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

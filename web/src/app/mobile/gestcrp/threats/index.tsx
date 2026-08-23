@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ThreatIndicator {
   id: string;
@@ -12,21 +12,6 @@ interface ThreatIndicator {
   source: string;
   last_seen: string;
 }
-
-const MOCK_INDICATORS: ThreatIndicator[] = [
-  { id: '1', type: 'IP', value: '192.168.1.105', confidence: 87, severity: 'HIGH', category: 'C2 Server', source: 'OSINT Feed', last_seen: '2026-08-08T09:00:00Z' },
-  { id: '2', type: 'DOMAIN', value: 'malware-c2.evil.com', confidence: 95, severity: 'CRITICAL', category: 'C2 Domain', source: 'Threat Intel', last_seen: '2026-08-08T08:30:00Z' },
-  { id: '3', type: 'FILE_HASH', value: 'a1b2c3d4e5f6...', confidence: 72, severity: 'MEDIUM', category: 'Malware', source: 'VirusTotal', last_seen: '2026-08-07T15:00:00Z' },
-  { id: '4', type: 'EMAIL', value: 'phish@fake-school.com', confidence: 68, severity: 'LOW', category: 'Phishing', source: 'User Report', last_seen: '2026-08-07T12:00:00Z' },
-  { id: '5', type: 'CVE', value: 'CVE-2026-1234', confidence: 100, severity: 'CRITICAL', category: 'Vulnerability', source: 'NVD', last_seen: '2026-08-06T10:00:00Z' },
-];
-
-const STATS = {
-  totalIndicators: 234,
-  activeFeeds: 8,
-  averageConfidence: 81,
-  criticalCount: 12,
-};
 
 function getSeverityColor(sev: string): string {
   switch (sev) {
@@ -52,12 +37,46 @@ function getTypeIcon(type: string): string {
 
 export default function ThreatsPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [indicators] = useState<ThreatIndicator[]>(MOCK_INDICATORS);
+  const [loading, setLoading] = useState(true);
+  const [indicators, setIndicators] = useState<ThreatIndicator[]>([]);
+  const [stats, setStats] = useState({ totalIndicators: 0, activeFeeds: 0, averageConfidence: 0, criticalCount: 0 });
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/threats/indicators');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      const items: ThreatIndicator[] = json.data || [];
+      setIndicators(items);
+      const confSum = items.reduce((s, i) => s + (i.confidence || 0), 0);
+      setStats({
+        totalIndicators: json.total || items.length,
+        activeFeeds: 0,
+        averageConfidence: items.length > 0 ? Math.round(confSum / items.length) : 0,
+        criticalCount: items.filter((i) => i.severity === 'CRITICAL').length,
+      });
+    } catch {
+      setIndicators([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -78,44 +97,50 @@ export default function ThreatsPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total Indicators</p>
-          <p className="text-lg font-bold text-amber-600">{STATS.totalIndicators}</p>
+          <p className="text-lg font-bold text-amber-600">{stats.totalIndicators}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Active Feeds</p>
-          <p className="text-lg font-bold text-green-600">{STATS.activeFeeds}</p>
+          <p className="text-lg font-bold text-green-600">{stats.activeFeeds}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Avg Confidence</p>
-          <p className="text-lg font-bold text-blue-600">{STATS.averageConfidence}%</p>
+          <p className="text-lg font-bold text-blue-600">{stats.averageConfidence}%</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Critical</p>
-          <p className="text-lg font-bold text-red-600">{STATS.criticalCount}</p>
+          <p className="text-lg font-bold text-red-600">{stats.criticalCount}</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {indicators.map((ind) => (
-          <div key={ind.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getTypeIcon(ind.type)}</span>
-                <span className="text-base font-bold text-gray-900 truncate">{ind.value}</span>
+      {indicators.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucun indicateur de menace trouvé</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {indicators.map((ind) => (
+            <div key={ind.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{getTypeIcon(ind.type)}</span>
+                  <span className="text-base font-bold text-gray-900 truncate">{ind.value}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getSeverityColor(ind.severity)}`}>{ind.severity}</span>
               </div>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getSeverityColor(ind.severity)}`}>{ind.severity}</span>
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <span>{ind.type}</span>
+                <span>Confidence: {ind.confidence}%</span>
+                <span>{ind.source}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-gray-500">{ind.category}</span>
+                <span className="text-xs text-gray-400">Last seen: {new Date(ind.last_seen).toLocaleDateString()}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span>{ind.type}</span>
-              <span>Confidence: {ind.confidence}%</span>
-              <span>{ind.source}</span>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-gray-500">{ind.category}</span>
-              <span className="text-xs text-gray-400">Last seen: {new Date(ind.last_seen).toLocaleDateString()}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RoleLayout from '@/components/layout/RoleLayout';
-import { sbClasses } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Users, BookOpen, TrendingUp, Calendar, Award, Edit, Download, UserPlus, AlertCircle } from 'lucide-react';
 
@@ -17,7 +17,13 @@ export default function ClassProfilePage({ params }: { params: { id: string } })
   useEffect(() => {
     async function load() {
       try {
-        const data = await sbClasses.get(params.id);
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('classes')
+          .select('*, students(*, user:users!students_user_id_fkey(*)), class_subjects(*, subject:subjects(*), teacher:teachers(*, user:users(*)))')
+          .eq('id', params.id)
+          .single();
+        if (error) throw error;
         setClassData(data);
       } catch (err: any) {
         setError(err.message || 'Impossible de charger les données de la classe.');

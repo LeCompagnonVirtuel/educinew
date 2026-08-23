@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface CyberTwin {
   id: string;
@@ -11,21 +11,6 @@ interface CyberTwin {
   score?: number;
   completed_at?: string;
 }
-
-const MOCK_TWINS: CyberTwin[] = [
-  { id: '1', name: 'Network Perimeter Test', status: 'COMPLETED', simulation_type: 'PENETRATION_TEST', scope: 'External Network', score: 78, completed_at: '2026-08-01T00:00:00Z' },
-  { id: '2', name: 'Phishing Resilience', status: 'RUNNING', simulation_type: 'RED_TEAM', scope: 'All Staff', completed_at: undefined },
-  { id: '3', name: 'Data Center DR Simulation', status: 'READY', simulation_type: 'CHAOS_ENGINEERING', scope: 'Infrastructure', completed_at: undefined },
-  { id: '4', name: 'API Security Audit', status: 'COMPLETED', simulation_type: 'ATTACK_SIMULATION', scope: 'External APIs', score: 92, completed_at: '2026-07-20T00:00:00Z' },
-  { id: '5', name: 'Insider Threat Scenario', status: 'DRAFT', simulation_type: 'RED_TEAM', scope: 'Internal Systems', completed_at: undefined },
-];
-
-const STATS = {
-  totalTwins: 15,
-  completedTwins: 9,
-  averageScore: 83,
-  activeScenarios: 4,
-};
 
 function getStatusColor(status: string): string {
   switch (status) {
@@ -62,12 +47,43 @@ function getSimulationTypeLabel(type: string): string {
 
 export default function CyberTwinPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [twins] = useState<CyberTwin[]>(MOCK_TWINS);
+  const [loading, setLoading] = useState(true);
+  const [twins, setTwins] = useState<CyberTwin[]>([]);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/cyber-twin/twins');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      setTwins(json.data || []);
+    } catch {
+      setTwins([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  const completedTwins = twins.filter((t) => t.status === 'COMPLETED');
+  const avgScore = completedTwins.length > 0
+    ? Math.round(completedTwins.reduce((s, t) => s + (t.score || 0), 0) / completedTwins.length)
+    : 0;
+  const activeScenarios = twins.filter((t) => t.status === 'RUNNING' || t.status === 'READY').length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -88,48 +104,54 @@ export default function CyberTwinPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total Twins</p>
-          <p className="text-lg font-bold text-fuchsia-600">{STATS.totalTwins}</p>
+          <p className="text-lg font-bold text-fuchsia-600">{twins.length}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Completed</p>
-          <p className="text-lg font-bold text-green-600">{STATS.completedTwins}</p>
+          <p className="text-lg font-bold text-green-600">{completedTwins.length}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Avg Score</p>
-          <p className="text-lg font-bold text-blue-600">{STATS.averageScore}</p>
+          <p className="text-lg font-bold text-blue-600">{avgScore}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Active Scenarios</p>
-          <p className="text-lg font-bold text-orange-600">{STATS.activeScenarios}</p>
+          <p className="text-lg font-bold text-orange-600">{activeScenarios}</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {twins.map((twin) => (
-          <div key={twin.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(twin.status)}`} />
-                <span className="text-base font-bold text-gray-900">{twin.name}</span>
+      {twins.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucun twin numérique trouvé</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {twins.map((twin) => (
+            <div key={twin.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(twin.status)}`} />
+                  <span className="text-base font-bold text-gray-900">{twin.name}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(twin.status)}`}>{twin.status}</span>
               </div>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(twin.status)}`}>{twin.status}</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
-              <span className="px-2 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">{getSimulationTypeLabel(twin.simulation_type)}</span>
-              <span>{twin.scope}</span>
-            </div>
-            {twin.score !== undefined && (
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-xs text-gray-500">Security Score</span>
-                <span className={`text-sm font-bold ${getScoreColor(twin.score)}`}>{twin.score}/100</span>
+              <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+                <span className="px-2 py-0.5 bg-fuchsia-50 text-fuchsia-700 rounded">{getSimulationTypeLabel(twin.simulation_type)}</span>
+                <span>{twin.scope}</span>
               </div>
-            )}
-            {twin.completed_at && (
-              <p className="text-xs text-gray-400 mt-1">Completed: {new Date(twin.completed_at).toLocaleDateString()}</p>
-            )}
-          </div>
-        ))}
-      </div>
+              {twin.score !== undefined && twin.score !== null && (
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-gray-500">Security Score</span>
+                  <span className={`text-sm font-bold ${getScoreColor(twin.score)}`}>{twin.score}/100</span>
+                </div>
+              )}
+              {twin.completed_at && (
+                <p className="text-xs text-gray-400 mt-1">Completed: {new Date(twin.completed_at).toLocaleDateString()}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

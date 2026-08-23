@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SOCIncident {
   id: string;
@@ -10,20 +10,6 @@ interface SOCIncident {
   risk_score: number;
   category: string;
 }
-
-const MOCK_INCIDENTS: SOCIncident[] = [
-  { id: '1', title: 'Brute Force Login Attempt', severity: 'HIGH', status: 'INVESTIGATING', risk_score: 78, category: 'Authentication' },
-  { id: '2', title: 'Data Exfiltration Alert', severity: 'CRITICAL', status: 'TRIAGED', risk_score: 92, category: 'Data Loss' },
-  { id: '3', title: 'Malware Detected', severity: 'MEDIUM', status: 'CONTAINED', risk_score: 55, category: 'Malware' },
-  { id: '4', title: 'Phishing Email Campaign', severity: 'LOW', status: 'RECOVERED', risk_score: 32, category: 'Social Engineering' },
-];
-
-const STATS = {
-  openIncidents: 12,
-  criticalIncidents: 2,
-  averageResolutionTime: 4.2,
-  totalIncidents: 156,
-};
 
 function getSeverityColor(sev: string): string {
   switch (sev) {
@@ -49,12 +35,45 @@ function getStatusDot(status: string): string {
 
 export default function SOCPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [incidents] = useState<SOCIncident[]>(MOCK_INCIDENTS);
+  const [loading, setLoading] = useState(true);
+  const [incidents, setIncidents] = useState<SOCIncident[]>([]);
+  const [stats, setStats] = useState({ openIncidents: 0, criticalIncidents: 0, averageResolutionTime: 0, totalIncidents: 0 });
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/soc/incidents');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      const items: SOCIncident[] = json.data || [];
+      setIncidents(items);
+      setStats({
+        openIncidents: items.filter((i) => i.status === 'NEW' || i.status === 'TRIAGED' || i.status === 'INVESTIGATING').length,
+        criticalIncidents: items.filter((i) => i.severity === 'CRITICAL').length,
+        averageResolutionTime: 0,
+        totalIncidents: json.total || items.length,
+      });
+    } catch {
+      setIncidents([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -75,40 +94,46 @@ export default function SOCPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Open Incidents</p>
-          <p className="text-lg font-bold text-red-600">{STATS.openIncidents}</p>
+          <p className="text-lg font-bold text-red-600">{stats.openIncidents}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Critical</p>
-          <p className="text-lg font-bold text-red-700">{STATS.criticalIncidents}</p>
+          <p className="text-lg font-bold text-red-700">{stats.criticalIncidents}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Avg Resolution (h)</p>
-          <p className="text-lg font-bold text-blue-600">{STATS.averageResolutionTime}</p>
+          <p className="text-lg font-bold text-blue-600">{stats.averageResolutionTime}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total Incidents</p>
-          <p className="text-lg font-bold text-gray-900">{STATS.totalIncidents}</p>
+          <p className="text-lg font-bold text-gray-900">{stats.totalIncidents}</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {incidents.map((inc) => (
-          <div key={inc.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-base font-bold text-gray-900 truncate flex-1 mr-2">{inc.title}</span>
-              <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(inc.status)}`} />
+      {incidents.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucun incident trouvé</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {incidents.map((inc) => (
+            <div key={inc.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-base font-bold text-gray-900 truncate flex-1 mr-2">{inc.title}</span>
+                <span className={`w-2.5 h-2.5 rounded-full ${getStatusDot(inc.status)}`} />
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getSeverityColor(inc.severity)}`}>{inc.severity}</span>
+                <span className="text-xs text-gray-500">{inc.status.replace('_', ' ')}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-gray-500">{inc.category}</span>
+                <span className="text-xs font-mono text-gray-600">Risk: {inc.risk_score}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getSeverityColor(inc.severity)}`}>{inc.severity}</span>
-              <span className="text-xs text-gray-500">{inc.status.replace('_', ' ')}</span>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-gray-500">{inc.category}</span>
-              <span className="text-xs font-mono text-gray-600">Risk: {inc.risk_score}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

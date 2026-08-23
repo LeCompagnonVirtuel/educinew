@@ -87,12 +87,12 @@ export default function PaymentsPage() {
               { header: 'Méthode', key: 'method', width: 14 },
             ];
             const data = payments.map(p => ({
-              student: p.student,
-              class: p.class,
-              amount: p.amount,
-              status: p.status,
-              date: p.date,
-              method: p.method,
+              student: p.student?.user?.name || '—',
+              class: p.student?.class?.name || '-',
+              amount: p.amount || 0,
+              status: p.status || 'PENDING',
+              date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('fr-FR') : p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '-',
+              method: p.paymentMethod || p.method || '-',
             }));
             exportToFile(data, columns, `paiements_comptable_${new Date().toISOString().split('T')[0]}`, 'pdf', { title: 'Paiements Comptable', subtitle: `Date: ${new Date().toLocaleDateString('fr-FR')}` }, exportBranding);
           }} className="flex items-center gap-2 px-4 py-2.5 bg-[#ba1a1a] text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors">
@@ -109,12 +109,12 @@ export default function PaymentsPage() {
               { header: 'Méthode', key: 'method', width: 14 },
             ];
             const data = payments.map(p => ({
-              student: p.student,
-              class: p.class,
-              amount: p.amount,
-              status: p.status,
-              date: p.date,
-              method: p.method,
+              student: p.student?.user?.name || '—',
+              class: p.student?.class?.name || '-',
+              amount: p.amount || 0,
+              status: p.status || 'PENDING',
+              date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('fr-FR') : p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '-',
+              method: p.paymentMethod || p.method || '-',
             }));
             exportToFile(data, columns, `paiements_comptable_${new Date().toISOString().split('T')[0]}`, 'csv', undefined, exportBranding);
           }} className="flex items-center gap-2 px-4 py-2.5 bg-[#22C55E] text-white rounded-xl text-sm font-semibold hover:bg-green-600 transition-colors">

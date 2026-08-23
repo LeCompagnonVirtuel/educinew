@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Decision {
   id: string;
@@ -11,14 +11,6 @@ interface Decision {
   status: 'pending' | 'approved' | 'executed' | 'rejected';
   created_at: string;
 }
-
-const FALLBACK_DECISIONS: Decision[] = [
-  { id: '1', title: 'Increase teacher hiring by 15%', category: 'HR', confidence: 0.89, impact: 'high', status: 'approved', created_at: '2026-08-10T08:00:00Z' },
-  { id: '2', title: 'Launch digital library platform', category: 'Technology', confidence: 0.82, impact: 'high', status: 'pending', created_at: '2026-08-10T07:30:00Z' },
-  { id: '3', title: 'Restructure fee payment plans', category: 'Financial', confidence: 0.91, impact: 'medium', status: 'executed', created_at: '2026-08-09T14:00:00Z' },
-  { id: '4', title: 'Implement AI tutoring system', category: 'Academic', confidence: 0.76, impact: 'high', status: 'pending', created_at: '2026-08-09T10:00:00Z' },
-  { id: '5', title: 'Optimize transport routes', category: 'Logistics', confidence: 0.85, impact: 'low', status: 'executed', created_at: '2026-08-08T16:00:00Z' },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -56,9 +48,26 @@ function getConfidenceColor(confidence: number): string {
 }
 
 export default function DecisionIntelligencePage() {
+  const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const decisions = FALLBACK_DECISIONS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/decision-intelligence');
+      if (res.ok) {
+        const data = await res.json();
+        setDecisions(Array.isArray(data) ? data : data.decisions ?? []);
+      }
+    } catch {
+      setDecisions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const pendingCount = decisions.filter((d) => d.status === 'pending').length;
   const avgConfidence = decisions.length > 0
     ? (decisions.reduce((sum, d) => sum + d.confidence, 0) / decisions.length * 100).toFixed(0)
@@ -66,8 +75,17 @@ export default function DecisionIntelligencePage() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -81,51 +99,59 @@ export default function DecisionIntelligencePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{decisions.length}</p>
-          <p className="text-xs text-gray-500">Decisions</p>
+      {decisions.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-yellow-600">{pendingCount}</p>
-          <p className="text-xs text-gray-500">Pending</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{avgConfidence}%</p>
-          <p className="text-xs text-gray-500">Confidence</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Recent Decisions</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {decisions.map((decision) => (
-            <div key={decision.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(decision.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{decision.title}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getImpactColor(decision.impact)}`}>
-                  {decision.impact}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(decision.status)}`}>
-                  {decision.status}
-                </span>
-                <span className={`font-semibold ${getConfidenceColor(decision.confidence)}`}>
-                  {(decision.confidence * 100).toFixed(0)}% confidence
-                </span>
-                <span>&middot;</span>
-                <span>{new Date(decision.created_at).toLocaleDateString()}</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{decisions.length}</p>
+              <p className="text-xs text-gray-500">Decisions</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-yellow-600">{pendingCount}</p>
+              <p className="text-xs text-gray-500">Pending</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{avgConfidence}%</p>
+              <p className="text-xs text-gray-500">Confidence</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Recent Decisions</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {decisions.map((decision) => (
+                <div key={decision.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(decision.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{decision.title}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getImpactColor(decision.impact)}`}>
+                      {decision.impact}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(decision.status)}`}>
+                      {decision.status}
+                    </span>
+                    <span className={`font-semibold ${getConfidenceColor(decision.confidence)}`}>
+                      {(decision.confidence * 100).toFixed(0)}% confidence
+                    </span>
+                    <span>&middot;</span>
+                    <span>{new Date(decision.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

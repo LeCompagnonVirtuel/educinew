@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface RuntimeService {
   id: string;
@@ -11,15 +11,6 @@ interface RuntimeService {
   memory_mb: number;
   uptime: string;
 }
-
-const FALLBACK_SERVICES: RuntimeService[] = [
-  { id: '1', name: 'Core Intelligence Engine', version: '2.4.1', status: 'running', cpu_percent: 34, memory_mb: 512, uptime: '14d 6h' },
-  { id: '2', name: 'Data Pipeline Worker', version: '1.8.3', status: 'running', cpu_percent: 67, memory_mb: 1024, uptime: '7d 12h' },
-  { id: '3', name: 'Model Inference Server', version: '3.1.0', status: 'running', cpu_percent: 82, memory_mb: 2048, uptime: '3d 8h' },
-  { id: '4', name: 'Event Processor', version: '2.0.5', status: 'running', cpu_percent: 45, memory_mb: 256, uptime: '14d 6h' },
-  { id: '5', name: 'Cache Manager', version: '1.2.0', status: 'error', cpu_percent: 0, memory_mb: 0, uptime: '0d 0h' },
-  { id: '6', name: 'Scheduler Service', version: '1.5.2', status: 'running', cpu_percent: 12, memory_mb: 128, uptime: '14d 6h' },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -51,16 +42,42 @@ function formatMemory(mb: number): string {
 }
 
 export default function RuntimePage() {
+  const [services, setServices] = useState<RuntimeService[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const services = FALLBACK_SERVICES;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/runtime');
+      if (res.ok) {
+        const data = await res.json();
+        setServices(Array.isArray(data) ? data : data.services ?? []);
+      }
+    } catch {
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const runningCount = services.filter((s) => s.status === 'running').length;
   const totalMemory = services.reduce((sum, s) => sum + s.memory_mb, 0);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -74,50 +91,58 @@ export default function RuntimePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{runningCount}</p>
-          <p className="text-xs text-gray-500">Running</p>
+      {services.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{formatMemory(totalMemory)}</p>
-          <p className="text-xs text-gray-500">Memory</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-red-600">{services.filter((s) => s.status === 'error').length}</p>
-          <p className="text-xs text-gray-500">Errors</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Services</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {services.map((service) => (
-            <div key={service.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(service.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{service.name}</span>
-                </div>
-                <span className="text-xs text-gray-400">v{service.version}</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(service.status)}`}>
-                  {service.status}
-                </span>
-                <span className={`font-semibold ${getCpuColor(service.cpu_percent)}`}>
-                  CPU: {service.cpu_percent}%
-                </span>
-                <span>RAM: {formatMemory(service.memory_mb)}</span>
-                <span>&middot;</span>
-                <span>Up: {service.uptime}</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{runningCount}</p>
+              <p className="text-xs text-gray-500">Running</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{formatMemory(totalMemory)}</p>
+              <p className="text-xs text-gray-500">Memory</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-red-600">{services.filter((s) => s.status === 'error').length}</p>
+              <p className="text-xs text-gray-500">Errors</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Services</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {services.map((service) => (
+                <div key={service.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(service.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{service.name}</span>
+                    </div>
+                    <span className="text-xs text-gray-400">v{service.version}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(service.status)}`}>
+                      {service.status}
+                    </span>
+                    <span className={`font-semibold ${getCpuColor(service.cpu_percent)}`}>
+                      CPU: {service.cpu_percent}%
+                    </span>
+                    <span>RAM: {formatMemory(service.memory_mb)}</span>
+                    <span>&middot;</span>
+                    <span>Up: {service.uptime}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

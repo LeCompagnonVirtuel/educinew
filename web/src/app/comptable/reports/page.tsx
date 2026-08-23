@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { sbPayments, sbFinance, sbClasses } from '@/lib/api';
+import { getSupabase } from '@/lib/api/shared';
+import { getAuthenticatedSchoolId } from '@/lib/api/secure';
 import { exportToFile, type ExportColumn } from '@/lib/export-utils';
 import { useExportBranding } from '@/hooks/useExportBranding';
 
@@ -19,6 +21,7 @@ export default function ReportsPage() {
   const [classesList, setClassesList] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [loading, setLoading] = useState(true);
+  const [totalExpenses, setTotalExpenses] = useState(0);
 
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
@@ -32,14 +35,19 @@ export default function ReportsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [statsData, paymentsData, classesData] = await Promise.all([
+        const supabase = getSupabase();
+        const schoolId = await getAuthenticatedSchoolId();
+        const [statsData, paymentsData, classesData, expensesResult] = await Promise.all([
           sbFinance.getStats(),
           sbPayments.list(),
           sbClasses.list().catch(() => []),
+          supabase.from('expenses').select('amount').eq('school_id', schoolId || ''),
         ]);
         setStats(statsData);
         setPayments(paymentsData || []);
         setClassesList(Array.isArray(classesData) ? classesData : []);
+        const expenses = expensesResult.data || [];
+        setTotalExpenses(expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0));
       } catch (e: any) {
         setError(e.message || 'Erreur lors du chargement');
       } finally {
@@ -50,8 +58,7 @@ export default function ReportsPage() {
   }, []);
 
   const totalRevenue = stats?.totalRevenue || 0;
-  const totalExpenses = stats?.totalExpenses || 0;
-  const netIncome = stats?.netIncome || totalRevenue - totalExpenses;
+  const netIncome = totalRevenue - totalExpenses;
   const collectionRate = stats?.collectionRate || 0;
 
   const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];

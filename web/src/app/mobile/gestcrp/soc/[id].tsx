@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 
 interface SOCIncidentDetail {
   id: string;
@@ -17,26 +18,6 @@ interface SOCIncidentDetail {
   timeline: { timestamp: string; action: string; actor: string }[];
 }
 
-const MOCK_DETAIL: SOCIncidentDetail = {
-  id: '1',
-  title: 'Brute Force Login Attempt',
-  description: 'Multiple failed login attempts detected from external IP targeting admin accounts.',
-  severity: 'HIGH',
-  status: 'INVESTIGATING',
-  category: 'Authentication',
-  source: 'SIEM Alert #4521',
-  affected_systems: ['auth-server-01', 'admin-portal'],
-  affected_users: ['admin@school.ci'],
-  risk_score: 78,
-  estimated_impact: 65,
-  timeline: [
-    { timestamp: '2026-08-08T10:00:00Z', action: 'Alert triggered', actor: 'SIEM' },
-    { timestamp: '2026-08-08T10:05:00Z', action: 'Incident created', actor: 'SOC Analyst' },
-    { timestamp: '2026-08-08T10:15:00Z', action: 'IP blocked at firewall', actor: 'Automated' },
-    { timestamp: '2026-08-08T10:30:00Z', action: 'Investigation started', actor: 'Security Lead' },
-  ],
-};
-
 function getSeverityColor(sev: string): string {
   switch (sev) {
     case 'CRITICAL': return 'text-red-700 bg-red-50';
@@ -48,7 +29,41 @@ function getSeverityColor(sev: string): string {
 }
 
 export default function SOCIncidentDetailPage() {
-  const [incident] = useState<SOCIncidentDetail>(MOCK_DETAIL);
+  const params = useParams();
+  const id = params?.id as string;
+  const [loading, setLoading] = useState(true);
+  const [incident, setIncident] = useState<SOCIncidentDetail | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/security/soc/incidents/${id}`);
+        if (!res.ok) throw new Error('Incident introuvable');
+        setIncident(await res.json());
+      } catch {
+        setIncident(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
+
+  if (!incident) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Incident introuvable</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -79,41 +94,47 @@ export default function SOCIncidentDetailPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Affected Systems</h2>
-        <div className="flex flex-wrap gap-2">
-          {incident.affected_systems.map((sys) => (
-            <span key={sys} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">{sys}</span>
-          ))}
+      {incident.affected_systems && incident.affected_systems.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Affected Systems</h2>
+          <div className="flex flex-wrap gap-2">
+            {incident.affected_systems.map((sys) => (
+              <span key={sys} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">{sys}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Affected Users</h2>
-        <div className="flex flex-wrap gap-2">
-          {incident.affected_users.map((user) => (
-            <span key={user} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">{user}</span>
-          ))}
+      {incident.affected_users && incident.affected_users.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Affected Users</h2>
+          <div className="flex flex-wrap gap-2">
+            {incident.affected_users.map((user) => (
+              <span key={user} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">{user}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Timeline</h2>
-        <div className="space-y-3">
-          {incident.timeline.map((event, idx) => (
-            <div key={idx} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                {idx < incident.timeline.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
+      {incident.timeline && incident.timeline.length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Timeline</h2>
+          <div className="space-y-3">
+            {incident.timeline.map((event, idx) => (
+              <div key={idx} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  {idx < incident.timeline.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
+                </div>
+                <div className="pb-3">
+                  <p className="text-sm font-medium text-gray-900">{event.action}</p>
+                  <p className="text-xs text-gray-500">{event.actor} · {new Date(event.timestamp).toLocaleTimeString()}</p>
+                </div>
               </div>
-              <div className="pb-3">
-                <p className="text-sm font-medium text-gray-900">{event.action}</p>
-                <p className="text-xs text-gray-500">{event.actor} · {new Date(event.timestamp).toLocaleTimeString()}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

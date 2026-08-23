@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Agent {
   id: string;
@@ -10,15 +10,6 @@ interface Agent {
   tasks_completed: number;
   uptime: string;
 }
-
-const FALLBACK_AGENTS: Agent[] = [
-  { id: '1', name: 'Data Ingestion Agent', type: 'ETL', status: 'active', tasks_completed: 1247, uptime: '99.9%' },
-  { id: '2', name: 'Anomaly Detection Agent', type: 'MONITORING', status: 'active', tasks_completed: 89, uptime: '99.7%' },
-  { id: '3', name: 'Report Generation Agent', type: 'REPORTING', status: 'idle', tasks_completed: 456, uptime: '98.5%' },
-  { id: '4', name: 'Notification Dispatcher', type: 'COMMUNICATION', status: 'active', tasks_completed: 3421, uptime: '99.8%' },
-  { id: '5', name: 'Model Retraining Agent', type: 'ML', status: 'error', tasks_completed: 23, uptime: '95.2%' },
-  { id: '6', name: 'Cache Optimization Agent', type: 'PERFORMANCE', status: 'active', tasks_completed: 567, uptime: '99.6%' },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -51,16 +42,42 @@ function getTypeColor(type: string): string {
 }
 
 export default function AgentOrchestrationPage() {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const agents = FALLBACK_AGENTS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/agent-orchestration');
+      if (res.ok) {
+        const data = await res.json();
+        setAgents(Array.isArray(data) ? data : data.agents ?? []);
+      }
+    } catch {
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const activeCount = agents.filter((a) => a.status === 'active').length;
   const totalTasks = agents.reduce((sum, a) => sum + a.tasks_completed, 0);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -74,49 +91,57 @@ export default function AgentOrchestrationPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{agents.length}</p>
-          <p className="text-xs text-gray-500">Agents</p>
+      {agents.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{totalTasks.toLocaleString()}</p>
-          <p className="text-xs text-gray-500">Tasks Done</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-yellow-600">{agents.filter((a) => a.status === 'error').length}</p>
-          <p className="text-xs text-gray-500">Errors</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Agent Fleet</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {agents.map((agent) => (
-            <div key={agent.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(agent.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{agent.name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(agent.type)}`}>
-                  {agent.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(agent.status)}`}>
-                  {agent.status}
-                </span>
-                <span>{agent.tasks_completed.toLocaleString()} tasks</span>
-                <span>&middot;</span>
-                <span>Uptime: {agent.uptime}</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{agents.length}</p>
+              <p className="text-xs text-gray-500">Agents</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{totalTasks.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">Tasks Done</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-yellow-600">{agents.filter((a) => a.status === 'error').length}</p>
+              <p className="text-xs text-gray-500">Errors</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Agent Fleet</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {agents.map((agent) => (
+                <div key={agent.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(agent.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{agent.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(agent.type)}`}>
+                      {agent.type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(agent.status)}`}>
+                      {agent.status}
+                    </span>
+                    <span>{agent.tasks_completed.toLocaleString()} tasks</span>
+                    <span>&middot;</span>
+                    <span>Uptime: {agent.uptime}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

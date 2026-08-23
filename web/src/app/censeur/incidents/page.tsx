@@ -3,14 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import RoleLayout from '@/components/layout/RoleLayout';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useAuth } from '@/hooks/useAuth';
 import { getSupabase } from '@/lib/api/shared';
 import {
-  Clock,
-  AlertTriangle,
   CheckCircle,
   FileText,
   Search,
-  Filter,
   Eye,
   Plus,
   Check,
@@ -24,6 +22,7 @@ interface Incident {
   id: string;
   date: string;
   student: string;
+  student_id: string;
   class: string;
   type: string;
   description: string;
@@ -33,60 +32,134 @@ interface Incident {
 const tabs: IncidentType[] = ['Tous', 'Retards', 'Absences', 'Comportement', 'Exclusions'];
 
 const statusColors: Record<string, string> = {
-  'En cours': 'bg-orange-100 text-orange-800',
-  Résolu: 'bg-green-100 text-green-800',
-  'En attente': 'bg-red-100 text-red-800',
+  OPEN: 'bg-orange-100 text-orange-800',
+  RESOLVED: 'bg-green-100 text-green-800',
+  PENDING: 'bg-red-100 text-red-800',
 };
 
-const typeColors: Record<string, string> = {
-  Retard: 'bg-blue-100 text-blue-800',
-  Absence: 'bg-purple-100 text-purple-800',
-  Comportement: 'bg-yellow-100 text-yellow-800',
-  Exclusion: 'bg-red-100 text-red-800',
+const statusLabels: Record<string, string> = {
+  OPEN: 'En cours',
+  RESOLVED: 'Résolu',
+  PENDING: 'En attente',
 };
+
+const typeMap: Record<string, string> = {
+  RETARD: 'Retards',
+  ABSENCE: 'Absences',
+  COMPORTEMENT: 'Comportement',
+  EXCLUSION: 'Exclusions',
+  AUTRE: 'Comportement',
+};
+
+const typeDisplayColors: Record<string, string> = {
+  RETARD: 'bg-blue-100 text-blue-800',
+  ABSENCE: 'bg-purple-100 text-purple-800',
+  COMPORTEMENT: 'bg-yellow-100 text-yellow-800',
+  EXCLUSION: 'bg-red-100 text-red-800',
+  AUTRE: 'bg-slate-100 text-slate-800',
+};
+
+interface StudentOption {
+  id: string;
+  first_name: string;
+  last_name: string;
+  class_name: string;
+}
 
 export default function IncidentsPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<IncidentType>('Tous');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [students, setStudents] = useState<StudentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ student_id: '', type: 'RETARD', description: '' });
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const supabase = getSupabase();
-        const { data, error: dbError } = await supabase
+    if (!user?.schoolId) return;
+    loadData();
+  }, [user?.schoolId]);
+
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = getSupabase();
+      const [incRes, studRes] = await Promise.all([
+        supabase
           .from('behavior_reports')
-          .select('*, student:students(*, user:users!students_user_id_fkey(*), class:classes(*))')
+          .select('*, student:students(id, first_name, last_name, class:classes(name))')
+          .eq('school_id', user!.schoolId)
           .order('created_at', { ascending: false })
-          .limit(100);
-        if (dbError) throw dbError;
-        const mapped: Incident[] = (data || []).map((inc: any) => ({
-          id: inc.id,
-          date: inc.created_at ? new Date(inc.created_at).toLocaleDateString('fr-FR') : '-',
-          student: inc.student?.user?.name || inc.student_name || 'Inconnu',
-          class: inc.student?.class?.name || inc.class_name || '-',
-          type: inc.type || 'Comportement',
-          description: inc.description || '',
-          status: inc.status || 'En attente',
-        }));
-        setIncidents(mapped);
-      } catch (e: any) {
-        setError(e.message || 'Erreur lors du chargement');
-      } finally {
-        setLoading(false);
-      }
+          .limit(100),
+        supabase
+          .from('students')
+          .select('id, first_name, last_name, class:classes(name)')
+          .eq('school_id', user!.schoolId),
+      ]);
+      if (incRes.error) throw incRes.error;
+      const mapped: Incident[] = (incRes.data || []).map((inc: any) => ({
+        id: inc.id,
+        date: inc.created_at ? new Date(inc.created_at).toLocaleDateString('fr-FR') : '-',
+        student_id: inc.student_id,
+        student: `${inc.student?.last_name || ''} ${inc.student?.first_name || ''}`.trim() || 'Inconnu',
+        class: (inc.student?.class as any)?.name || '',
+        type: inc.type || 'COMPORTEMENT',
+        description: inc.description || '',
+        status: inc.status || 'PENDING',
+      }));
+      setIncidents(mapped);
+      const mappedStudents: StudentOption[] = (studRes.data || []).map((s: any) => ({
+        id: s.id,
+        first_name: s.first_name || '',
+        last_name: s.last_name || '',
+        class_name: (s.class as any)?.name || '',
+      }));
+      setStudents(mappedStudents);
+    } catch (e: any) {
+      setError(e.message || 'Erreur lors du chargement');
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, []);
+  }
+
+  async function handleCreateIncident() {
+    if (!form.student_id || !form.type) return;
+    setSaving(true);
+    try {
+      const supabase = getSupabase();
+      const { error: insertError } = await supabase.from('behavior_reports').insert({
+        school_id: user!.schoolId,
+        student_id: form.student_id,
+        type: form.type,
+        description: form.description || null,
+        status: 'OPEN',
+        date: new Date().toISOString().split('T')[0],
+      });
+      if (insertError) throw insertError;
+      setShowModal(false);
+      setForm({ student_id: '', type: 'RETARD', description: '' });
+      loadData();
+    } catch (e: any) {
+      setError(e.message || "Erreur lors de l'enregistrement");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleResolve(id: string) {
+    const supabase = getSupabase();
+    await supabase.from('behavior_reports').update({ status: 'RESOLVED' }).eq('id', id);
+    loadData();
+  }
 
   const filtered = incidents.filter((inc) => {
-    const matchesTab = activeTab === 'Tous' || inc.type === activeTab.slice(0, -1);
+    const tabFilter = activeTab === 'Tous' ? null : activeTab;
+    const matchesTab = !tabFilter || typeMap[inc.type] === tabFilter;
     const matchesSearch = inc.student.toLowerCase().includes(search.toLowerCase());
     return matchesTab && matchesSearch;
   });
@@ -200,9 +273,9 @@ export default function IncidentsPage() {
                     </td>
                     <td className="px-5 py-3">
                       <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${typeColors[inc.type]}`}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${typeDisplayColors[inc.type] || 'bg-slate-100 text-slate-800'}`}
                       >
-                        {inc.type}
+                        {typeMap[inc.type] || inc.type}
                       </span>
                     </td>
                     <td
@@ -213,32 +286,40 @@ export default function IncidentsPage() {
                     </td>
                     <td className="px-5 py-3">
                       <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColors[inc.status]}`}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColors[inc.status] || 'bg-slate-100 text-slate-800'}`}
                       >
-                        {inc.status}
+                        {statusLabels[inc.status] || inc.status}
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <button
-                        className="p-1.5 rounded-md transition-colors hover:bg-gray-100"
-                        style={{ color: '#4f46e5' }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="p-1.5 rounded-md transition-colors hover:bg-gray-100"
+                          style={{ color: '#4f46e5' }}
+                          title="Voir les détails"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {inc.status !== 'RESOLVED' && (
+                          <button
+                            onClick={() => handleResolve(inc.id)}
+                            className="p-1.5 rounded-md transition-colors hover:bg-green-50"
+                            style={{ color: '#16a34a' }}
+                            title="Marquer comme résolu"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )))}
               </tbody>
             </table>
           </div>
-          {filtered.length === 0 && (
-            <div className="text-center py-12" style={{ color: '#464555' }}>
-              Aucun incident trouvé
-            </div>
-          )}
         </div>
 
-        {/* Add Incident Modal Placeholder */}
+        {/* Add Incident Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div
@@ -265,45 +346,39 @@ export default function IncidentsPage() {
                   >
                     Élève
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Nom de l'élève"
+                  <select
+                    value={form.student_id}
+                    onChange={(e) => setForm((prev) => ({ ...prev, student_id: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{ borderColor: '#e5e7eb', color: '#191c1d' }}
-                  />
+                  >
+                    <option value="">Sélectionner un élève</option>
+                    {students.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.last_name} {s.first_name} ({s.class_name})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: '#464555' }}
-                    >
-                      Classe
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: 3ème A"
-                      className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
-                      style={{ borderColor: '#e5e7eb', color: '#191c1d' }}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: '#464555' }}
-                    >
-                      Type
-                    </label>
-                    <select
-                      className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
-                      style={{ borderColor: '#e5e7eb', color: '#191c1d' }}
-                    >
-                      <option>Retard</option>
-                      <option>Absence</option>
-                      <option>Comportement</option>
-                      <option>Exclusion</option>
-                    </select>
-                  </div>
+                <div>
+                  <label
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: '#464555' }}
+                  >
+                    Type
+                  </label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                    style={{ borderColor: '#e5e7eb', color: '#191c1d' }}
+                  >
+                    <option value="RETARD">Retard</option>
+                    <option value="ABSENCE">Absence</option>
+                    <option value="COMPORTEMENT">Comportement</option>
+                    <option value="EXCLUSION">Exclusion</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
                 </div>
                 <div>
                   <label
@@ -314,6 +389,8 @@ export default function IncidentsPage() {
                   </label>
                   <textarea
                     rows={3}
+                    value={form.description}
+                    onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                     placeholder="Décrire l'incident..."
                     className="w-full px-3 py-2 rounded-lg border text-sm outline-none resize-none"
                     style={{ borderColor: '#e5e7eb', color: '#191c1d' }}
@@ -329,10 +406,12 @@ export default function IncidentsPage() {
                   Annuler
                 </button>
                 <button
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
+                  onClick={handleCreateIncident}
+                  disabled={saving || !form.student_id}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-50"
                   style={{ backgroundColor: '#3525cd' }}
                 >
-                  <Check className="w-4 h-4" />
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Check className="w-4 h-4" />}
                   Enregistrer
                 </button>
               </div>

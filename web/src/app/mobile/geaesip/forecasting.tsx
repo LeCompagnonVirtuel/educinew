@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Forecast {
   id: string;
@@ -10,14 +10,6 @@ interface Forecast {
   target_date: string;
   status: string;
 }
-
-const FALLBACK_FORECASTS: Forecast[] = [
-  { id: '1', name: 'Enrollment Growth Q4 2026', type: 'ENROLLMENT', confidence: 0.89, target_date: '2026-12-31', status: 'active' },
-  { id: '2', name: 'Revenue Projection 2027', type: 'FINANCIAL', confidence: 0.84, target_date: '2027-06-30', status: 'active' },
-  { id: '3', name: 'Staff Demand Forecast', type: 'HR', confidence: 0.77, target_date: '2027-01-01', status: 'draft' },
-  { id: '4', name: 'Infrastructure Capacity', type: 'OPERATIONS', confidence: 0.91, target_date: '2026-12-31', status: 'active' },
-  { id: '5', name: 'Academic Performance Trend', type: 'ACADEMIC', confidence: 0.86, target_date: '2026-12-31', status: 'active' },
-];
 
 function getTypeColor(type: string): string {
   switch (type) {
@@ -46,17 +38,43 @@ function getStatusDot(status: string): string {
 }
 
 export default function ForecastingPage() {
+  const [forecasts, setForecasts] = useState<Forecast[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const forecasts = FALLBACK_FORECASTS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/forecasting');
+      if (res.ok) {
+        const data = await res.json();
+        setForecasts(Array.isArray(data) ? data : data.forecasts ?? []);
+      }
+    } catch {
+      setForecasts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const avgConfidence = forecasts.length > 0
     ? (forecasts.reduce((sum, f) => sum + f.confidence, 0) / forecasts.length * 100).toFixed(0)
     : '0';
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -70,48 +88,56 @@ export default function ForecastingPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{forecasts.length}</p>
-          <p className="text-xs text-gray-500">Forecasts</p>
+      {forecasts.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{forecasts.filter((f) => f.status === 'active').length}</p>
-          <p className="text-xs text-gray-500">Active</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-purple-600">{avgConfidence}%</p>
-          <p className="text-xs text-gray-500">Confidence</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Active Forecasts</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {forecasts.map((forecast) => (
-            <div key={forecast.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(forecast.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{forecast.name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(forecast.type)}`}>
-                  {forecast.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className={`font-semibold ${getConfidenceColor(forecast.confidence)}`}>
-                  {(forecast.confidence * 100).toFixed(0)}% confidence
-                </span>
-                <span>&middot;</span>
-                <span>Target: {forecast.target_date}</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{forecasts.length}</p>
+              <p className="text-xs text-gray-500">Forecasts</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{forecasts.filter((f) => f.status === 'active').length}</p>
+              <p className="text-xs text-gray-500">Active</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-purple-600">{avgConfidence}%</p>
+              <p className="text-xs text-gray-500">Confidence</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Active Forecasts</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {forecasts.map((forecast) => (
+                <div key={forecast.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(forecast.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{forecast.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(forecast.type)}`}>
+                      {forecast.type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className={`font-semibold ${getConfidenceColor(forecast.confidence)}`}>
+                      {(forecast.confidence * 100).toFixed(0)}% confidence
+                    </span>
+                    <span>&middot;</span>
+                    <span>Target: {forecast.target_date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

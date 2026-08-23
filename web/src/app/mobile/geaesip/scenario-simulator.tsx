@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Scenario {
   id: string;
@@ -11,14 +11,6 @@ interface Scenario {
   runs: number;
   created_at: string;
 }
-
-const FALLBACK_SCENARIOS: Scenario[] = [
-  { id: '1', name: 'Enrollment Surge (+20%)', type: 'GROWTH', status: 'completed', variables: 8, runs: 12, created_at: '2026-08-09T10:00:00Z' },
-  { id: '2', name: 'Budget Cut (-15%)', type: 'CONSTRAINT', status: 'running', variables: 6, runs: 5, created_at: '2026-08-10T08:00:00Z' },
-  { id: '3', name: 'New Campus Launch', type: 'EXPANSION', status: 'draft', variables: 12, runs: 0, created_at: '2026-08-10T09:00:00Z' },
-  { id: '4', name: 'Teacher Strike Impact', type: 'DISRUPTION', status: 'completed', variables: 5, runs: 8, created_at: '2026-08-08T14:00:00Z' },
-  { id: '5', name: 'Digital Transformation', type: 'TRANSFORMATION', status: 'completed', variables: 10, runs: 15, created_at: '2026-08-07T09:00:00Z' },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -52,16 +44,42 @@ function getTypeColor(type: string): string {
 }
 
 export default function ScenarioSimulatorPage() {
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const scenarios = FALLBACK_SCENARIOS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/scenario-simulator');
+      if (res.ok) {
+        const data = await res.json();
+        setScenarios(Array.isArray(data) ? data : data.scenarios ?? []);
+      }
+    } catch {
+      setScenarios([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const runningCount = scenarios.filter((s) => s.status === 'running').length;
   const totalRuns = scenarios.reduce((sum, s) => sum + s.runs, 0);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -75,49 +93,57 @@ export default function ScenarioSimulatorPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{scenarios.length}</p>
-          <p className="text-xs text-gray-500">Scenarios</p>
+      {scenarios.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{totalRuns}</p>
-          <p className="text-xs text-gray-500">Total Runs</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-purple-600">{scenarios.reduce((sum, s) => sum + s.variables, 0)}</p>
-          <p className="text-xs text-gray-500">Variables</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Scenarios</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {scenarios.map((scenario) => (
-            <div key={scenario.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(scenario.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{scenario.name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(scenario.type)}`}>
-                  {scenario.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(scenario.status)}`}>
-                  {scenario.status}
-                </span>
-                <span>{scenario.variables} variables</span>
-                <span>&middot;</span>
-                <span>{scenario.runs} runs</span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{scenarios.length}</p>
+              <p className="text-xs text-gray-500">Scenarios</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{totalRuns}</p>
+              <p className="text-xs text-gray-500">Total Runs</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-purple-600">{scenarios.reduce((sum, s) => sum + s.variables, 0)}</p>
+              <p className="text-xs text-gray-500">Variables</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Scenarios</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {scenarios.map((scenario) => (
+                <div key={scenario.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(scenario.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{scenario.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTypeColor(scenario.type)}`}>
+                      {scenario.type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(scenario.status)}`}>
+                      {scenario.status}
+                    </span>
+                    <span>{scenario.variables} variables</span>
+                    <span>&middot;</span>
+                    <span>{scenario.runs} runs</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

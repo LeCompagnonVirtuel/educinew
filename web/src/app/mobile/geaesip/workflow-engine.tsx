@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Workflow {
   id: string;
@@ -11,14 +11,6 @@ interface Workflow {
   last_run: string;
   success_rate: number;
 }
-
-const FALLBACK_WORKFLOWS: Workflow[] = [
-  { id: '1', name: 'Student Onboarding Pipeline', trigger: 'ENROLLMENT', status: 'active', steps: 6, last_run: '2026-08-10T08:00:00Z', success_rate: 0.98 },
-  { id: '2', name: 'Fee Collection Reminder', trigger: 'SCHEDULE', status: 'active', steps: 3, last_run: '2026-08-10T07:00:00Z', success_rate: 0.95 },
-  { id: '3', name: 'Exam Results Processing', trigger: 'EVENT', status: 'active', steps: 8, last_run: '2026-08-09T16:00:00Z', success_rate: 0.92 },
-  { id: '4', name: 'Teacher Performance Review', trigger: 'SCHEDULE', status: 'paused', steps: 5, last_run: '2026-08-01T10:00:00Z', success_rate: 0.88 },
-  { id: '5', name: 'Incident Auto-escalation', trigger: 'CONDITION', status: 'error', steps: 4, last_run: '2026-08-10T06:30:00Z', success_rate: 0.75 },
-];
 
 function getStatusDot(status: string): string {
   switch (status) {
@@ -55,9 +47,26 @@ function getSuccessColor(rate: number): string {
 }
 
 export default function WorkflowEnginePage() {
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const workflows = FALLBACK_WORKFLOWS;
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/geaesip/workflow-engine');
+      if (res.ok) {
+        const data = await res.json();
+        setWorkflows(Array.isArray(data) ? data : data.workflows ?? []);
+      }
+    } catch {
+      setWorkflows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const activeCount = workflows.filter((w) => w.status === 'active').length;
   const avgSuccess = workflows.length > 0
     ? (workflows.reduce((sum, w) => sum + w.success_rate, 0) / workflows.length * 100).toFixed(0)
@@ -65,8 +74,17 @@ export default function WorkflowEnginePage() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    setLoading(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -80,50 +98,58 @@ export default function WorkflowEnginePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-blue-600">{workflows.length}</p>
-          <p className="text-xs text-gray-500">Workflows</p>
+      {workflows.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
+          <p className="text-sm text-gray-500">No data available</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-green-600">{activeCount}</p>
-          <p className="text-xs text-gray-500">Active</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
-          <p className="text-xl font-bold text-purple-600">{avgSuccess}%</p>
-          <p className="text-xs text-gray-500">Success</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Workflows</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {workflows.map((wf) => (
-            <div key={wf.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(wf.status)}`} />
-                  <span className="text-sm font-bold text-gray-900">{wf.name}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTriggerColor(wf.trigger)}`}>
-                  {wf.trigger}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(wf.status)}`}>
-                  {wf.status}
-                </span>
-                <span>{wf.steps} steps</span>
-                <span className={`font-semibold ${getSuccessColor(wf.success_rate)}`}>
-                  {(wf.success_rate * 100).toFixed(0)}% success
-                </span>
-              </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-blue-600">{workflows.length}</p>
+              <p className="text-xs text-gray-500">Workflows</p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-green-600">{activeCount}</p>
+              <p className="text-xs text-gray-500">Active</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 text-center">
+              <p className="text-xl font-bold text-purple-600">{avgSuccess}%</p>
+              <p className="text-xs text-gray-500">Success</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="p-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-900">Workflows</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {workflows.map((wf) => (
+                <div key={wf.id} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${getStatusDot(wf.status)}`} />
+                      <span className="text-sm font-bold text-gray-900">{wf.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getTriggerColor(wf.trigger)}`}>
+                      {wf.trigger}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(wf.status)}`}>
+                      {wf.status}
+                    </span>
+                    <span>{wf.steps} steps</span>
+                    <span className={`font-semibold ${getSuccessColor(wf.success_rate)}`}>
+                      {(wf.success_rate * 100).toFixed(0)}% success
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

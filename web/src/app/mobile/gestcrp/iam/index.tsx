@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface IAMPolicy {
   id: string;
@@ -12,40 +12,43 @@ interface IAMPolicy {
   priority: number;
 }
 
-const MOCK_POLICIES: IAMPolicy[] = [
-  { id: '1', name: 'Admin Full Access', enabled: true, effect: 'ALLOW', subjects: ['admin'], resources: ['*'], priority: 1 },
-  { id: '2', name: 'Teacher Read-Only', enabled: true, effect: 'ALLOW', subjects: ['teacher'], resources: ['grades', 'attendance'], priority: 2 },
-  { id: '3', name: 'Student Restriction', enabled: true, effect: 'DENY', subjects: ['student'], resources: ['admin_panel', 'user_management'], priority: 3 },
-  { id: '4', name: 'Parent View Access', enabled: false, effect: 'ALLOW', subjects: ['parent'], resources: ['reports', 'attendance'], priority: 4 },
-];
-
-interface IAMStats {
-  totalPolicies: number;
-  activeSessions: number;
-  failedLogins: number;
-  mfaEnabled: number;
-}
-
-const DEFAULT_STATS: IAMStats = {
-  totalPolicies: 24,
-  activeSessions: 156,
-  failedLogins: 3,
-  mfaEnabled: 89,
-};
-
 function getEffectColor(effect: string): string {
   return effect === 'ALLOW' ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50';
 }
 
 export default function IAMPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [policies] = useState<IAMPolicy[]>(MOCK_POLICIES);
-  const [stats] = useState<IAMStats>(DEFAULT_STATS);
+  const [loading, setLoading] = useState(true);
+  const [policies, setPolicies] = useState<IAMPolicy[]>([]);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/iam/policies');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      setPolicies(json.data || []);
+    } catch {
+      setPolicies([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -66,45 +69,43 @@ export default function IAMPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total Policies</p>
-          <p className="text-lg font-bold text-purple-600">{stats.totalPolicies}</p>
+          <p className="text-lg font-bold text-purple-600">{policies.length}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Active Sessions</p>
-          <p className="text-lg font-bold text-green-600">{stats.activeSessions}</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">Failed Logins</p>
-          <p className="text-lg font-bold text-red-600">{stats.failedLogins}</p>
-        </div>
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500">MFA Enabled %</p>
-          <p className="text-lg font-bold text-blue-600">{stats.mfaEnabled}%</p>
+          <p className="text-xs text-gray-500">Active Policies</p>
+          <p className="text-lg font-bold text-green-600">{policies.filter((p) => p.enabled).length}</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {policies.map((policy) => (
-          <div key={policy.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-base font-bold text-gray-900">{policy.name}</span>
-              <span className={`w-2.5 h-2.5 rounded-full ${policy.enabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+      {policies.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucune politique IAM trouvée</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {policies.map((policy) => (
+            <div key={policy.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-base font-bold text-gray-900">{policy.name}</span>
+                <span className={`w-2.5 h-2.5 rounded-full ${policy.enabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getEffectColor(policy.effect)}`}>{policy.effect}</span>
+                <span className="text-xs text-gray-500">Priority: {policy.priority}</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {policy.subjects && policy.subjects.map((s) => (
+                  <span key={s} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{s}</span>
+                ))}
+                <span className="text-xs text-gray-400 mx-1">→</span>
+                {policy.resources && policy.resources.map((r) => (
+                  <span key={r} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{r}</span>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getEffectColor(policy.effect)}`}>{policy.effect}</span>
-              <span className="text-xs text-gray-500">Priority: {policy.priority}</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {policy.subjects.map((s) => (
-                <span key={s} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{s}</span>
-              ))}
-              <span className="text-xs text-gray-400 mx-1">→</span>
-              {policy.resources.map((r) => (
-                <span key={r} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{r}</span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

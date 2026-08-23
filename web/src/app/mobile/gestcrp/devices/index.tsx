@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Device {
   id: string;
@@ -12,21 +12,6 @@ interface Device {
   last_seen_at: string;
   compliance_status: { compliant: boolean };
 }
-
-const MOCK_DEVICES: Device[] = [
-  { id: '1', name: 'Admin-Laptop-01', platform: 'WINDOWS', status: 'ONLINE', owner: 'Admin Principal', department: 'Direction', last_seen_at: '2026-08-08T10:00:00Z', compliance_status: { compliant: true } },
-  { id: '2', name: 'Teacher-Tablet-03', platform: 'ANDROID', status: 'ONLINE', owner: 'Mme. Koné', department: 'Sciences', last_seen_at: '2026-08-08T09:30:00Z', compliance_status: { compliant: true } },
-  { id: '3', name: 'Server-Prod-01', platform: 'LINUX', status: 'ONLINE', owner: 'IT Team', department: 'IT', last_seen_at: '2026-08-08T10:05:00Z', compliance_status: { compliant: true } },
-  { id: '4', name: 'Student-Chromebook-12', platform: 'CHROME_OS', status: 'COMPROMISED', owner: 'Élève #4521', department: 'Students', last_seen_at: '2026-08-07T16:00:00Z', compliance_status: { compliant: false } },
-  { id: '5', name: 'Office-PC-02', platform: 'WINDOWS', status: 'OFFLINE', owner: 'Secrétaire', department: 'Administration', last_seen_at: '2026-08-06T18:00:00Z', compliance_status: { compliant: true } },
-];
-
-const STATS = {
-  totalDevices: 156,
-  onlineDevices: 128,
-  compromisedDevices: 2,
-  complianceRate: 94.2,
-};
 
 function getStatusColor(status: string): string {
   switch (status) {
@@ -53,12 +38,43 @@ function getPlatformIcon(platform: string): string {
 
 export default function DevicesPage() {
   const [refreshing, setRefreshing] = useState(false);
-  const [devices] = useState<Device[]>(MOCK_DEVICES);
+  const [loading, setLoading] = useState(true);
+  const [devices, setDevices] = useState<Device[]>([]);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/security/devices/inventory');
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const json = await res.json();
+      setDevices(json.data || []);
+    } catch {
+      setDevices([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchData();
   };
+
+  const totalDevices = devices.length;
+  const onlineDevices = devices.filter((d) => d.status === 'ONLINE').length;
+  const compromisedDevices = devices.filter((d) => d.status === 'COMPROMISED').length;
+  const compliantDevices = devices.filter((d) => d.compliance_status?.compliant).length;
+  const complianceRate = totalDevices > 0 ? Math.round((compliantDevices / totalDevices) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -79,46 +95,52 @@ export default function DevicesPage() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total Devices</p>
-          <p className="text-lg font-bold text-cyan-600">{STATS.totalDevices}</p>
+          <p className="text-lg font-bold text-cyan-600">{totalDevices}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Online</p>
-          <p className="text-lg font-bold text-green-600">{STATS.onlineDevices}</p>
+          <p className="text-lg font-bold text-green-600">{onlineDevices}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Compromised</p>
-          <p className="text-lg font-bold text-red-600">{STATS.compromisedDevices}</p>
+          <p className="text-lg font-bold text-red-600">{compromisedDevices}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Compliance Rate</p>
-          <p className="text-lg font-bold text-blue-600">{STATS.complianceRate}%</p>
+          <p className="text-lg font-bold text-blue-600">{complianceRate}%</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {devices.map((device) => (
-          <div key={device.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getPlatformIcon(device.platform)}</span>
-                <span className="text-base font-bold text-gray-900">{device.name}</span>
+      {devices.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
+          <p className="text-gray-500 text-sm">Aucun appareil trouvé</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {devices.map((device) => (
+            <div key={device.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{getPlatformIcon(device.platform)}</span>
+                  <span className="text-base font-bold text-gray-900">{device.name}</span>
+                </div>
+                <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(device.status)}`} />
               </div>
-              <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(device.status)}`} />
+              <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
+                <span>{device.platform}</span>
+                <span>{device.department}</span>
+                <span>{device.owner}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className={`text-xs font-medium ${device.compliance_status?.compliant ? 'text-green-600' : 'text-red-600'}`}>
+                  {device.compliance_status?.compliant ? 'Compliant' : 'Non-Compliant'}
+                </span>
+                <span className="text-xs text-gray-400">Last: {new Date(device.last_seen_at).toLocaleDateString()}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
-              <span>{device.platform}</span>
-              <span>{device.department}</span>
-              <span>{device.owner}</span>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className={`text-xs font-medium ${device.compliance_status.compliant ? 'text-green-600' : 'text-red-600'}`}>
-                {device.compliance_status.compliant ? 'Compliant' : 'Non-Compliant'}
-              </span>
-              <span className="text-xs text-gray-400">Last: {new Date(device.last_seen_at).toLocaleDateString()}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchool } from '@/hooks/useSchool';
 import { useRealtimeSubscription } from '@/hooks/useRealtime';
-import { sbFinance, sbPayments } from '@/lib/api';
+import { sbPayments } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 
 function useFinancialData() {
@@ -25,7 +25,7 @@ function useFinancialData() {
     async function load() {
       try {
         const [s, p] = await Promise.allSettled([
-          sbFinance.getStats(),
+          sbPayments.getStats(user?.schoolId),
           sbPayments.listBySchool(user?.schoolId),
         ]);
         if (s.status === 'fulfilled') setStats(s.value);
@@ -123,13 +123,20 @@ export default function ComptableDashboard() {
     { table: 'payments', event: '*', onData: () => {} },
   ]);
 
+  const totalTransactions = payments.length;
+  const pendingCount = payments.filter(p => (p.status || '').toUpperCase() === 'PENDING').length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dailyRevenue = payments
+    .filter(p => (p.status || '').toUpperCase() === 'COMPLETED' && p.created_at?.startsWith(todayStr))
+    .reduce((sum, p) => sum + (p.amount || 0), 0);
+
   const dynamicCards = statCards.map(card => ({
     ...card,
     value: stats ? (
       card.key === 'totalRevenue' ? formatCurrency(stats.totalRevenue || 0) :
-      card.key === 'totalTransactions' ? String(stats.totalTransactions || 0) :
-      card.key === 'pendingCount' ? String(stats.pendingCount || 0) :
-      card.key === 'dailyRevenue' ? formatCurrency(stats.dailyRevenue || 0) :
+      card.key === 'totalTransactions' ? String(totalTransactions) :
+      card.key === 'pendingCount' ? String(pendingCount) :
+      card.key === 'dailyRevenue' ? formatCurrency(dailyRevenue) :
       card.value
     ) : (finLoading ? '...' : '0'),
   }));

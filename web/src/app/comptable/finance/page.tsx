@@ -43,13 +43,13 @@ export default function ComptableFinancePage() {
 
   useEffect(() => {
     loadData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, statusFilter]);
 
   async function loadData() {
     setLoading(true);
     try {
       const [statsData, invoicesData] = await Promise.all([
-        sbFinance.getStats(selectedPeriod),
+        sbFinance.getStats(),
         sbFinance.getInvoices(statusFilter === 'all' ? undefined : statusFilter),
       ]);
       setStats(statsData as any);
@@ -64,6 +64,15 @@ export default function ComptableFinancePage() {
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('fr-FR') + ' XOF';
   };
+
+  const pendingAmount = invoices
+    .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIAL' || inv.status === 'OVERDUE')
+    .reduce((sum, inv) => sum + ((inv.finalAmount || 0) - (inv.paidAmount || 0)), 0);
+
+  const paidInvoiceCount = invoices.filter(i => i.status === 'PAID').length;
+  const paidInvoiceTotal = invoices.filter(i => i.status === 'PAID').reduce((s, i) => s + (i.finalAmount || 0), 0);
+  const unpaidInvoiceCount = invoices.filter(i => i.status === 'UNPAID').length;
+  const unpaidInvoiceTotal = invoices.filter(i => i.status === 'UNPAID').reduce((s, i) => s + (i.finalAmount || 0), 0);
 
   const getStatusConfig = (status: string) => {
     const configs: Record<string, { icon: any; color: string; bg: string; label: string }> = {
@@ -143,7 +152,7 @@ export default function ComptableFinancePage() {
             </div>
             <span className="text-sm text-[#6B7280]">{lang === 'fr' ? 'En attente' : 'Pending'}</span>
           </div>
-          <p className="text-2xl font-bold text-[#111827]">{formatCurrency(stats?.pendingAmount || 0)}</p>
+          <p className="text-2xl font-bold text-[#111827]">{formatCurrency(pendingAmount)}</p>
           <p className="text-xs text-amber-600 mt-1">{lang === 'fr' ? 'En attente' : 'Pending'}</p>
         </div>
 
@@ -155,10 +164,10 @@ export default function ComptableFinancePage() {
             <span className="text-sm text-[#6B7280]">{lang === 'fr' ? 'Factures payées' : 'Paid Invoices'}</span>
           </div>
           <p className="text-2xl font-bold text-[#111827]">
-            {stats?.invoices?.find(i => i.status === 'PAID')?._count || 0}
+            {paidInvoiceCount}
           </p>
           <p className="text-xs text-blue-600 mt-1">
-            {formatCurrency(stats?.invoices?.find(i => i.status === 'PAID')?._sum?.finalAmount || 0)}
+            {formatCurrency(paidInvoiceTotal)}
           </p>
         </div>
 
@@ -170,10 +179,10 @@ export default function ComptableFinancePage() {
             <span className="text-sm text-[#6B7280]">{lang === 'fr' ? 'Impayées' : 'Unpaid'}</span>
           </div>
           <p className="text-2xl font-bold text-[#111827]">
-            {stats?.invoices?.find(i => i.status === 'UNPAID')?._count || 0}
+            {unpaidInvoiceCount}
           </p>
           <p className="text-xs text-red-600 mt-1">
-            {formatCurrency(stats?.invoices?.find(i => i.status === 'UNPAID')?._sum?.finalAmount || 0)}
+            {formatCurrency(unpaidInvoiceTotal)}
           </p>
         </div>
       </div>
