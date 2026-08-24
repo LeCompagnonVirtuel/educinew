@@ -1,0 +1,50 @@
+{
+  "pagesAudited": 146,
+  "placeholders": [],
+  "mocked": [],
+  "missingLoading": [],
+  "missingError": [],
+  "emptyHandlers": [],
+  "bientotDisponible": [
+    "blog\\page.tsx"
+  ],
+  "consoleLog": [],
+  "asAny": {
+    "count": 0,
+    "files": []
+  },
+  "tsIgnore": 0,
+  "tsNocheck": 0,
+  "returnEmpty": [
+    {
+      "file": "features\\attendance\\services\\dashboard.service.ts",
+      "count": 4
+    },
+    {
+      "file": "features\\analytics\\repositories\\analytics.repository.ts",
+      "count": 5
+    },
+    {
+      "file": "features\\documents\\repositories\\document.repository.ts",
+      "count": 8
+    },
+    {
+      "file": "features\\lxp\\repositories\\lxp.repository.ts",
+      "count": 9
+    },
+    {
+      "file": "features\\messages\\repositories\\message.repository.ts",
+      "count": 6
+    },
+    {
+      "file": "features\\students\\repositories\\student.repository.ts",
+      "count": 3
+    }
+  ],
+  "severity": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0
+  }
+}
