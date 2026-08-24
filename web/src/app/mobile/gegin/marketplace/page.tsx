@@ -1,26 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useMobileApi } from '@/hooks/useMobileApi'
+
+interface MarketplaceItem {
+  id: number
+  name: string
+  type: string
+  price?: string
+  status: string
+}
 
 export default function MarketplacePage() {
-  const [refreshing, setRefreshing] = useState(false)
-
-  const handleRefresh = () => {
-    setRefreshing(true)
-    setTimeout(() => setRefreshing(false), 1000)
-  }
+  const { data, loading, error, refresh } = useMobileApi<MarketplaceItem>({
+    endpoint: '/api/interoperability/marketplace-listings',
+  })
 
   const stats = [
-    { label: 'Products', value: '124' },
-    { label: 'Active', value: '98' },
-    { label: 'Sold', value: '26' },
-  ]
-
-  const entities = [
-    { id: 1, name: 'Textbooks Bundle', type: 'Physical', price: '45,000 FCFA', status: 'Active' },
-    { id: 2, name: 'Online Course Access', type: 'Digital', price: '15,000 FCFA', status: 'Active' },
-    { id: 3, name: 'School Uniform Set', type: 'Physical', price: '25,000 FCFA', status: 'Active' },
-    { id: 4, name: 'Lab Equipment Kit', type: 'Physical', price: '120,000 FCFA', status: 'Sold Out' },
+    { label: 'Total', value: data.length },
+    { label: 'Active', value: data.filter((d) => d.status === 'Active').length },
+    { label: 'Sold', value: data.filter((d) => d.status !== 'Active').length },
   ]
 
   return (
@@ -28,40 +26,70 @@ export default function MarketplacePage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Marketplace</h1>
         <button
-          onClick={handleRefresh}
+          onClick={refresh}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          disabled={refreshing}
+          disabled={loading}
         >
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+      )}
+
       <div className="grid grid-cols-3 gap-3 mb-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-3 rounded-lg shadow text-center">
-            <p className="text-2xl font-bold text-blue-600">{stat.value}</p>
-            <p className="text-xs text-gray-500">{stat.label}</p>
-          </div>
-        ))}
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white p-3 rounded-lg shadow animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-12 mx-auto mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-16 mx-auto" />
+              </div>
+            ))
+          : stats.map((stat) => (
+              <div key={stat.label} className="bg-white p-3 rounded-lg shadow text-center">
+                <p className="text-2xl font-bold text-blue-600">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.label}</p>
+              </div>
+            ))}
       </div>
 
       <div className="space-y-3">
-        {entities.map((entity) => (
-          <div key={entity.id} className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">{entity.name}</h3>
-                <p className="text-sm text-gray-500">{entity.type}</p>
-                <p className="text-sm font-medium text-green-600">{entity.price}</p>
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white p-4 rounded-lg shadow animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-20 mb-1" />
+                    <div className="h-3 bg-gray-200 rounded w-16" />
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full w-16" />
+                </div>
               </div>
-              <span className={`px-2 py-1 text-xs rounded-full ${
-                entity.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                {entity.status}
-              </span>
-            </div>
-          </div>
-        ))}
+            ))
+          : data.map((entity) => (
+              <div key={entity.id} className="bg-white p-4 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{entity.name}</h3>
+                    <p className="text-sm text-gray-500">{entity.type}</p>
+                    {entity.price && (
+                      <p className="text-sm font-medium text-green-600">{entity.price}</p>
+                    )}
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      entity.status === 'Active'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {entity.status}
+                  </span>
+                </div>
+              </div>
+            ))}
       </div>
     </div>
   )

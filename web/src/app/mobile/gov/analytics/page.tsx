@@ -1,31 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useMobileApi } from '@/hooks/useMobileApi';
 
 export default function AnalyticsPage() {
-  const [stats] = useState({
-    dataPointsCollected: 12500000,
-    reportsGenerated: 8400,
-    activeDashboards: 156,
-    predictiveModels: 42,
-    regionsMonitored: 42,
-    insightsDelivered: 23000,
+  const { data, loading, refresh } = useMobileApi({
+    endpoint: '/api/gov/analytics/dashboard/national',
   });
 
-  const [refreshing, setRefreshing] = useState(false);
+  const stats = data.slice(0, 6).map((item: Record<string, unknown>) => ({
+    label: (item.name ?? item.title ?? item.label ?? 'Total') as string,
+    value: (item.count ?? item.total ?? item.value ?? '-') as string | number,
+  }));
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
-  };
-
-  const entities = [
-    { name: 'Data Pipelines', count: 320, icon: '🔄' },
-    { name: 'Analytics Reports', count: stats.reportsGenerated, icon: '📊' },
-    { name: 'Live Dashboards', count: stats.activeDashboards, icon: '📈' },
-    { name: 'AI Models', count: stats.predictiveModels, icon: '🤖' },
-    { name: 'Data Sources', count: 89, icon: '🗄️' },
-  ];
+  const entities = data.slice(0, 5).map((item: Record<string, unknown>, i: number) => ({
+    name: (item.name ?? item.title ?? '') as string,
+    count: (item.count ?? item.total ?? 0) as number,
+    icon: ['🔄', '📊', '📈', '🤖', '🗄️'][i] ?? '📋',
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -35,21 +26,28 @@ export default function AnalyticsPage() {
           <p className="text-sm text-gray-500">Data Intelligence Platform</p>
         </div>
         <button
-          onClick={handleRefresh}
-          disabled={refreshing}
+          onClick={refresh}
+          disabled={loading}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
         >
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        {Object.entries(stats).map(([key, value]) => (
-          <div key={key} className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-            <p className="text-xs text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
-            <p className="text-lg font-bold text-gray-900">{String(value)}</p>
-          </div>
-        ))}
+        {loading
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white p-3 rounded-lg shadow-sm border animate-pulse">
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+                <div className="h-4 bg-gray-200 rounded w-3/4" />
+              </div>
+            ))
+          : stats.map((stat) => (
+              <div key={stat.label} className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                <p className="text-xs text-gray-500 capitalize">{stat.label}</p>
+                <p className="text-lg font-bold text-gray-900">{String(stat.value)}</p>
+              </div>
+            ))}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100">
@@ -57,15 +55,21 @@ export default function AnalyticsPage() {
           <h2 className="text-sm font-semibold text-gray-900">Key Entities</h2>
         </div>
         <div className="divide-y divide-gray-50">
-          {entities.map((entity) => (
-            <div key={entity.name} className="flex items-center justify-between p-3">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">{entity.icon}</span>
-                <span className="text-sm text-gray-700">{entity.name}</span>
-              </div>
-              <span className="text-sm font-medium text-gray-900">{entity.count.toLocaleString()}</span>
-            </div>
-          ))}
+          {loading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-3 animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                </div>
+              ))
+            : entities.map((entity) => (
+                <div key={entity.name} className="flex items-center justify-between p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{entity.icon}</span>
+                    <span className="text-sm text-gray-700">{entity.name}</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{entity.count.toLocaleString()}</span>
+                </div>
+              ))}
         </div>
       </div>
     </div>

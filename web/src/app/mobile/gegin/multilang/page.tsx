@@ -1,26 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useMobileApi } from '@/hooks/useMobileApi'
+
+interface MultilangItem {
+  id: number
+  name: string
+  type: string
+  status: string
+  progress?: number
+}
 
 export default function MultilangPage() {
-  const [refreshing, setRefreshing] = useState(false)
-
-  const handleRefresh = () => {
-    setRefreshing(true)
-    setTimeout(() => setRefreshing(false), 1000)
-  }
+  const { data, loading, error, refresh } = useMobileApi<MultilangItem>({
+    endpoint: '/api/integration/ai/translate',
+  })
 
   const stats = [
-    { label: 'Languages', value: '6' },
-    { label: 'Translated', value: '4' },
-    { label: 'In Progress', value: '2' },
-  ]
-
-  const entities = [
-    { id: 1, name: 'French', type: 'Language', status: 'Complete', progress: 100 },
-    { id: 2, name: 'English', type: 'Language', status: 'Complete', progress: 100 },
-    { id: 3, name: 'Wolof', type: 'Language', status: 'In Progress', progress: 72 },
-    { id: 4, name: 'Bambara', type: 'Language', status: 'In Progress', progress: 45 },
+    { label: 'Languages', value: data.length },
+    { label: 'Complete', value: data.filter((d) => d.status === 'Complete').length },
+    { label: 'In Progress', value: data.filter((d) => d.status !== 'Complete').length },
   ]
 
   return (
@@ -28,42 +26,73 @@ export default function MultilangPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Multilingual</h1>
         <button
-          onClick={handleRefresh}
+          onClick={refresh}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          disabled={refreshing}
+          disabled={loading}
         >
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+      )}
+
       <div className="grid grid-cols-3 gap-3 mb-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-3 rounded-lg shadow text-center">
-            <p className="text-2xl font-bold text-blue-600">{stat.value}</p>
-            <p className="text-xs text-gray-500">{stat.label}</p>
-          </div>
-        ))}
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white p-3 rounded-lg shadow animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-12 mx-auto mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-16 mx-auto" />
+              </div>
+            ))
+          : stats.map((stat) => (
+              <div key={stat.label} className="bg-white p-3 rounded-lg shadow text-center">
+                <p className="text-2xl font-bold text-blue-600">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.label}</p>
+              </div>
+            ))}
       </div>
 
       <div className="space-y-3">
-        {entities.map((entity) => (
-          <div key={entity.id} className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">{entity.name}</h3>
-                <p className="text-sm text-gray-500">{entity.type}</p>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${entity.progress}%` }} />
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white p-4 rounded-lg shadow animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-16 mb-2" />
+                    <div className="h-2 bg-gray-200 rounded-full w-full" />
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full w-12 ml-3" />
                 </div>
               </div>
-              <span className={`px-2 py-1 text-xs rounded-full ml-3 ${
-                entity.status === 'Complete' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {entity.progress}%
-              </span>
-            </div>
-          </div>
-        ))}
+            ))
+          : data.map((entity) => (
+              <div key={entity.id} className="bg-white p-4 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{entity.name}</h3>
+                    <p className="text-sm text-gray-500">{entity.type}</p>
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${entity.progress ?? 0}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ml-3 ${
+                      entity.status === 'Complete'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {entity.progress ?? 0}%
+                  </span>
+                </div>
+              </div>
+            ))}
       </div>
     </div>
   )
